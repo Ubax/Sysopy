@@ -15,5 +15,6 @@ int createEmptyDefaultSizeArray(struct Array* array);
 int addTemporaryFileBlockPointerToArray(struct Array* array, char *tempFileName);
 void deleteBlockFromArray(struct Array* array, int i);
 void emptyArrayAndBlocks(struct Array* array);
+int createEmptyArray(struct Array* array, size_t size);
 
 #endif
