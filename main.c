@@ -175,6 +175,7 @@ int argumentList(int argc, char **argv, struct Array *array) {
 }
 
 int main(int argc, char **argv) {
+    printf("Systemy Operacyjne 2019\nAuthor: Jakub Tkacz\nVesrion:1.0\nDate:07.03.2019\n\n");
     struct Array array = {NULL, 0};
     int exitCode = argumentList(argc, argv, &array);
 
