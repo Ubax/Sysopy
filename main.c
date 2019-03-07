@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/times.h>
 #include "zad1lib/library.h"
 
-#define NUMBER_OF_COMMANDS 5
+#define NUMBER_OF_COMMANDS 6
 
 enum CMD {
     NO_COMMAND = -1,
@@ -12,6 +14,7 @@ enum CMD {
     REMOVE_BLOCK = 2,
     EXIT = 3,
     ADD_TO_TABLE = 4,
+    HELP = 5,
 };
 
 struct Command {
@@ -111,12 +114,24 @@ int removeBlock(struct Array *array, char **args) {
     return -1;
 }
 
+int help(struct Array *array, char **args) {
+    printf("\n---- HELP ----\n");
+    printf("create_table\n");
+    printf("search_direct\n");
+    printf("remove_block\n");
+    printf("exit\n");
+    printf("add_to_table\n");
+    printf("\n\n");
+    return -1;
+}
+
 const struct Command commands[NUMBER_OF_COMMANDS] = {
         {"create_table",     1, CREATE_TABLE,     createTable},
         {"search_directory", 3, SEARCH_DIRECTORY, searchDirectory},
         {"remove_block",     1, REMOVE_BLOCK,     removeBlock},
         {"exit",             0, EXIT,             my_exit},
-        {"add_to_table",     1, ADD_TO_TABLE,     addToTable}
+        {"add_to_table",     1, ADD_TO_TABLE,     addToTable},
+        {"help",             0, HELP,             help}
 };
 
 int console(struct Array *array) {
@@ -177,11 +192,38 @@ int argumentList(int argc, char **argv, struct Array *array) {
 int main(int argc, char **argv) {
     printf("Systemy Operacyjne 2019\nAuthor: Jakub Tkacz\nVesrion:1.0\nDate:07.03.2019\n\n");
     struct Array array = {NULL, 0};
+
+    struct timespec start, stop;
+    double dur;
+    static struct tms st_cpu;
+    static struct tms en_cpu;
+
+    if (clock_gettime(CLOCK_REALTIME, &start) == -1) {
+        perror("clock gettime");
+        exit(EXIT_FAILURE);
+    }
+
+
+    times(&st_cpu);
+
     int exitCode = argumentList(argc, argv, &array);
 
-    while (exitCode == -1) {
+    times(&en_cpu);
+
+    if (clock_gettime(CLOCK_REALTIME, &stop) == -1) {
+        perror("clock gettime");
+        exit(EXIT_FAILURE);
+    }
+
+    dur = stop.tv_sec - start.tv_sec + (stop.tv_nsec - start.tv_nsec)*1.0/1000000000;
+
+    printf("Real time: %lf s\n", dur);
+    printf("Cpu user time: %lu s\n", en_cpu.tms_utime - st_cpu.tms_utime);
+    printf("Cpu system time: %lu s\n", en_cpu.tms_stime - st_cpu.tms_stime);
+
+    /*while (exitCode == -1) {
         printf("\n> ");
         exitCode = console(&array);
-    }
-    return exitCode;
+    }*/
+    return exitCode == -1 ? 0 : exitCode;
 }
