@@ -18,10 +18,11 @@ struct Command {
     char *name;
     int numberOfArguments;
     enum CMD type;
+
     int (*fun)(struct Array *array, char **args);
 };
 
-size_t strToSizeT(char* str, int *error) {
+size_t strToSizeT(char *str, int *error) {
     *error = 0;
     size_t ret = 0;
     int i = 0;
@@ -37,27 +38,30 @@ size_t strToSizeT(char* str, int *error) {
 }
 
 int createTable(struct Array *array, char **args) {
+    printf("\tcreate_table...\n");
     size_t size;
     int error = 0;
-    printf("%s",args[0]);
+    printf("\t\targs: %s\n", args[0]);
     size = strToSizeT(args[0], &error);
-    printf("%lu", size);
+    printf("\t\tafter conversion: %lu\n", size);
     if (error < 0) {
-        printf("Bad input");
-        return 3;
+        printf("Bad input\n");
+        return 4;
     }
     if (size > 0) {
+        printf("\t\tsize>0: true\n");
         if (array->size > 0)emptyArrayAndBlocks(array);
         if (createEmptyArray(array, size) != 0) {
             printf("Not enough memory for a table\n");
             return 4;
         }
-        printf("Table created\n");
+        printf("\tTable created\n");
     }
     return -1;
 }
 
 int searchDirectory(struct Array *array, char **args) {
+    printf("\tsearch_directory...\n");
     char *dir;
     char *file;
     char *fileTmp;
@@ -68,17 +72,20 @@ int searchDirectory(struct Array *array, char **args) {
 
     if (dir == NULL || strlen(dir) == 0 || file == NULL || strlen(file) == 0 || fileTmp == NULL ||
         strlen(fileTmp) == 0)
-        return 2;
+        return 3;
+    printf("\tall arguments seem to be correct...\n");
 
     findAndSaveResultToTemporaryFile(dir, file, fileTmp);
 }
 
 int addToTable(struct Array *array, char **args) {
+    printf("\tadd_to_table...\n");
     const size_t nameFileTmpLength = 256;
     char fileTmp[nameFileTmpLength];
     scanf("%255s", fileTmp);
     if (fileTmp == NULL || strlen(fileTmp) == 0)
-        return 1;
+        return 2;
+    printf("\tall arguments seem to be correct...\n");
     addTemporaryFileBlockPointerToArray(array, fileTmp);
 }
 
@@ -87,46 +94,78 @@ int my_exit(struct Array *array, char **args) {
 }
 
 const struct Command commands[NUMBER_OF_COMMANDS] = {
-        {"create_table",     1, CREATE_TABLE, createTable},
-        {"search_directory", 1, SEARCH_DIRECTORY, searchDirectory},
+        {"create_table",     1, CREATE_TABLE,     createTable},
+        {"search_directory", 3, SEARCH_DIRECTORY, searchDirectory},
         {"remove_block",     1, REMOVE_BLOCK, NULL},
-        {"exit",             0, EXIT, my_exit},
-        {"add_to_table",     1, ADD_TO_TABLE, addToTable}
+        {"exit",             0, EXIT,             my_exit},
+        {"add_to_table",     0, ADD_TO_TABLE,     addToTable}
 };
 
-int processCommand(char *cmd, struct Array *array) {
+int console(struct Array *array) {
+    char cmd[255];
+    scanf("%254s", cmd);
     enum CMD currentCommand = NO_COMMAND;
-    for (int i = 0; i < NUMBER_OF_COMMANDS; i++) {
-        if (strcmp(cmd, commands[i].name) == 0){
-            char ** args = calloc(commands[i].numberOfArguments, sizeof(char*));
-            for(int i=0;i<commands[i].numberOfArguments;i++){
-                args[i]=calloc(4097, sizeof(char));
-                scanf("%s", args[i]);
-                printf("%s",args[i]);
+    for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
+        if (strcmp(cmd, commands[numberOfCommand].name) == 0) {
+            currentCommand=commands->type;
+            char **args = NULL;
+            args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
+            for (int numberOfCommandArgument = 0; numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
+                args[numberOfCommandArgument] = calloc(4097, sizeof(char));
+                scanf("%s", args[numberOfCommandArgument]);
             }
-            return commands[i].fun(array, args);
+            int ret = commands[numberOfCommand].fun(array, args);
+            if (args != NULL)free(args);
+            return ret;
         }
     }
-    if(currentCommand == NO_COMMAND){
+    if (currentCommand == NO_COMMAND) {
         printf("command %s not known", cmd);
-        return 3;
+        return 1;
+    }
+    return -1;
+}
+
+int argumentList(int argc, char ** argv, struct Array *array) {
+    printf("started processing...\n");
+    int numberOfListArgument=1;
+    for (; numberOfListArgument < argc; numberOfListArgument++) {
+        enum CMD currentCommand = NO_COMMAND;
+        for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
+            if (strcmp(argv[numberOfListArgument], commands[numberOfCommand].name) == 0) {
+                printf("%s...\n",commands[numberOfCommand].name);
+                currentCommand=commands->type;
+                char **args = NULL;
+                args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
+                for (int numberOfCommandArgument = 0; numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
+                    numberOfListArgument++;
+                    args[numberOfCommandArgument] = argv[numberOfListArgument];
+                }
+                int ret = commands[numberOfCommand].fun(array, args);
+                if (args != NULL)free(args);
+                if(ret >= 0)return ret;
+            }
+        }
+        if (currentCommand == NO_COMMAND) {
+            printf("command %s not known", argv[numberOfListArgument]);
+            return 1;
+        }
     }
     return -1;
 }
 
 int main(int argc, char **argv) {
     struct Array array;
-    int exitCode = -1;
+    int exitCode = argumentList(argc,argv,&array);
 
     for (int i = 0; i < argc; i++) {
         printf("%s\n", argv[i]);
     }
 
-    char cmd[255];
+
     while (exitCode == -1) {
         printf("\n> ");
-        scanf("%254s", cmd);
-        exitCode = processCommand(cmd, &array);
+        exitCode = console(&array);
     }
     return exitCode;
 }
