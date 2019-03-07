@@ -6,6 +6,7 @@
 
 #define INITIAL_ARRAY_LENGTH 20
 
+
 void findAndSaveResultToTemporaryFile(char *directory, char *fileName, char *tempFileName) {
     char command[strlen(directory) + strlen(fileName) + 30];
     strcpy(command, "find ");
@@ -26,7 +27,7 @@ size_t fileSize(FILE *f) {
 
 char *readTemporaryFile(char *fileName) {
     FILE *file = fopen(fileName, "r");
-    if (file == NULL){
+    if (file == NULL) {
         printf("No temporary file with that name\n");
         return NULL;
     }
@@ -42,41 +43,44 @@ char *readTemporaryFile(char *fileName) {
     return block;
 }
 
-int createEmptyArray(char **array, size_t *arraySize, size_t size) {
-    array = calloc(size, sizeof(char *));
-    if (array == NULL)return -1;
-    for (int i = 0; i < size; i++)array[i] = NULL;
-    (*arraySize) = size;
+int createEmptyArray(struct Array* array, size_t size) {
+    array->block = calloc(size, sizeof(char *));
+    if (array->block == NULL)return -1;
+
+    array->size = size;
+
+    for (int i = 0; i < array->size; i++)array->block[i] = NULL;
+
     return 0;
 }
 
-int createEmptyDefaultSizeArray(char **array, size_t *arraySize) {
-    return createEmptyArray(array, arraySize, INITIAL_ARRAY_LENGTH);
+int createEmptyDefaultSizeArray(struct Array* array) {
+    return createEmptyArray(array, INITIAL_ARRAY_LENGTH);
 }
 
-int addTemporaryFileBlockPointerToArray(char **array, size_t *arraySize, char *tempFileName) {
+int addTemporaryFileBlockPointerToArray(struct Array* array, char *tempFileName) {
     int i = 0;
-    if(*arraySize<1 || array == NULL)return -1;
-    for (; i < (*arraySize); i++) {
-        if (array[i] == NULL)break;
+    if (array->size < 1 || array->block == NULL)return -1;
+    for (; i < array->size; i++) {
+        if (array->block[i] == NULL)break;
     }
-    if (i == (*arraySize))
-        if (!realloc(array, ++(*arraySize)))return -1;
-    array[i] = readTemporaryFile(tempFileName);
+    if (i == array->size)
+        if (!realloc(array, ++array->size))return -1;
+    array->block[i] = readTemporaryFile(tempFileName);
     return i;
 }
 
-void deleteBlockFromArray(char **array, size_t *arraySize, int i) {
-    if (i >= *arraySize || array[i] == NULL)return;
-    free(array[i]);
-    array[i] = NULL;
+void deleteBlockFromArray(struct Array* array, int i) {
+    if (i >= array->size || array->block[i] == NULL)return;
+    free(array->block[i]);
+    array->block[i] = NULL;
 }
 
-void emptyArrayAndBlocks(char **array, size_t *arraySize) {
+void emptyArrayAndBlocks(struct Array* array) {
     if (array != NULL) {
-        for (int i = 0; i < *arraySize; i++) {
-            if (array[i] != NULL) {
-                free(array[i]);
+        for (int i = 0; i < array->size; i++) {
+            if (array->block[i] != NULL) {
+                free(array->block[i]);
             }
         }
         free(array);

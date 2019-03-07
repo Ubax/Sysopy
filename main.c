@@ -42,7 +42,10 @@ size_t fileSize(FILE *f) {
 
 char *readTemporaryFile(char *fileName) {
     FILE *file = fopen(fileName, "r");
-    if (file == NULL)return NULL;
+    if (file == NULL){
+        printf("No temporary file with that name\n");
+        return NULL;
+    }
 
     char *block = (char *) calloc(fileSize(file), sizeof(char));
 
@@ -187,6 +190,7 @@ int main() {
                 addToTable(array, &arraySize);
                 break;
             case EXIT:
+                emptyArrayAndBlocks(array, &arraySize);
                 break;
             default:
                 printf("command %s not known", cmd);

@@ -3,4 +3,7 @@ project(zad1lib C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_library(zad1lib library.c library.h)
+set(libsrc library.c)
+
+add_library(zad1libShared SHARED ${libsrc})
+add_library(zad1libStatic STATIC ${libsrc})
