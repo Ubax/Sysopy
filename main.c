@@ -20,8 +20,6 @@ enum CMD {
     EXIT = 3,
 };
 
-int arraySize = 0;
-
 void findAndSaveResultToTemporaryFile(char *directory, char *fileName) {
     char command[strlen(directory) + strlen(fileName) + 30];
     strcpy(command, "find ");
@@ -58,40 +56,87 @@ char *readTemporaryFile() {
     return block;
 }
 
-int addTemporaryFileBlockPointerToArray(char **blockArray) {
+int addTemporaryFileBlockPointerToArray(char **array, size_t * arraySize) {
     int i = 0;
-    for (; i < arraySize; i++) {
-        if (blockArray[i] == NULL)break;
+    for (; i < (*arraySize); i++) {
+        if (array[i] == NULL)break;
     }
-    if (i == arraySize)
-        if (!realloc(blockArray, ++arraySize))return -1;
-    blockArray[i] = readTemporaryFile();
+    if (i == (*arraySize))
+        if (!realloc(array, ++(*arraySize)))return -1;
+    array[i] = readTemporaryFile();
     return i;
 }
 
-char **createEmptyArray() {
-    char **array = calloc(INITIAL_ARRAY_LENGTH, sizeof(char *));
-    arraySize = INITIAL_ARRAY_LENGTH;
-    for (int i = 0; i < arraySize; i++)array[i] = NULL;
-    return array;
+int createEmptyArray(char** array, size_t * arraySize, size_t size) {
+    array = calloc(size, sizeof(char *));
+    if(array==NULL)return -1;
+    for (int i = 0; i < size; i++)array[i] = NULL;
+    (*arraySize) = size;
+    return 0;
 }
 
-void deleteBlockFromArray(char **array, int i) {
-    if (i >= arraySize || array[i] == NULL)return;
+int createEmptyDefaultSizeArray(char** array, size_t * arraySize) {
+    return createEmptyArray(array, arraySize, INITIAL_ARRAY_LENGTH);
+}
+
+void deleteBlockFromArray(char **array, size_t * arraySize, int i) {
+    if (i >= *arraySize || array[i] == NULL)return;
     free(array[i]);
     array[i] = NULL;
 }
 
+void emptyArrayAndBlocks(char ** array, size_t * arraySize){
+    if(array != NULL){
+        for(int i=0;i<*arraySize;i++){
+            if(array[i]!=NULL){
+                free(array[i]);
+            }
+        }
+        free(array);
+    }
+}
+
+void createTable(char ** array, size_t * arraySize){
+    size_t size;
+    scanf("%zu", &size);
+    if(size > 0){
+        if(array != NULL)emptyArrayAndBlocks(array, arraySize);
+        if(createEmptyArray(array, arraySize, size)!=0){
+            printf("Not enough memory for a table\n");
+            return;
+        }
+        printf("Table created\n");
+    }
+}
+
 int main() {
+    size_t arraySize = 0;
+    char ** array = NULL;
+
     enum CMD currentCommand = NO_COMMAND;
-    char * cmd;
+    char cmd[255];
     while(currentCommand!=EXIT){
         printf("\n> ");
-        scanf("%s", cmd);
+        scanf("%254s", cmd);
+        currentCommand=NO_COMMAND;
         for(int i=0;i<NUMBER_OF_COMMANDS;i++){
             if(strcmp(cmd, commands[i])==0)currentCommand=i;
         }
+        switch (currentCommand){
+            case CREATE_TABLE:
+                createTable(array, &arraySize);
+                break;
+            case SEARCH_DIRECTORY:
 
+                break;
+            case REMOVE_BLOCK:
+
+                break;
+            case EXIT:
+                break;
+            default:
+                printf("command %s not known",cmd);
+        }
     }
     return 0;
 }
