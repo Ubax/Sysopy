@@ -76,29 +76,47 @@ int searchDirectory(struct Array *array, char **args) {
     printf("\tall arguments seem to be correct...\n");
 
     findAndSaveResultToTemporaryFile(dir, file, fileTmp);
+    return -1;
 }
 
 int addToTable(struct Array *array, char **args) {
     printf("\tadd_to_table...\n");
     const size_t nameFileTmpLength = 256;
-    char fileTmp[nameFileTmpLength];
-    scanf("%255s", fileTmp);
+    char *fileTmp = args[0];
     if (fileTmp == NULL || strlen(fileTmp) == 0)
         return 2;
     printf("\tall arguments seem to be correct...\n");
     addTemporaryFileBlockPointerToArray(array, fileTmp);
+    return -1;
 }
 
 int my_exit(struct Array *array, char **args) {
     return 0;
 }
 
+int removeBlock(struct Array *array, char **args) {
+    size_t index;
+    int error = 0;
+    printf("\t\targs: %s\n", args[0]);
+    index = strToSizeT(args[0], &error);
+    printf("\t\tafter conversion: %lu\n", index);
+    if (error < 0) {
+        printf("Bad input\n");
+        return 4;
+    }
+    if (index >= 0) {
+        printf("\t\tindex>=0: true\n");
+        deleteBlockFromArray(array, index);
+    }
+    return -1;
+}
+
 const struct Command commands[NUMBER_OF_COMMANDS] = {
         {"create_table",     1, CREATE_TABLE,     createTable},
         {"search_directory", 3, SEARCH_DIRECTORY, searchDirectory},
-        {"remove_block",     1, REMOVE_BLOCK, NULL},
+        {"remove_block",     1, REMOVE_BLOCK,     removeBlock},
         {"exit",             0, EXIT,             my_exit},
-        {"add_to_table",     0, ADD_TO_TABLE,     addToTable}
+        {"add_to_table",     1, ADD_TO_TABLE,     addToTable}
 };
 
 int console(struct Array *array) {
@@ -107,10 +125,11 @@ int console(struct Array *array) {
     enum CMD currentCommand = NO_COMMAND;
     for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
         if (strcmp(cmd, commands[numberOfCommand].name) == 0) {
-            currentCommand=commands->type;
+            currentCommand = commands->type;
             char **args = NULL;
             args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
-            for (int numberOfCommandArgument = 0; numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
+            for (int numberOfCommandArgument = 0;
+                 numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
                 args[numberOfCommandArgument] = calloc(4097, sizeof(char));
                 scanf("%s", args[numberOfCommandArgument]);
             }
@@ -126,24 +145,25 @@ int console(struct Array *array) {
     return -1;
 }
 
-int argumentList(int argc, char ** argv, struct Array *array) {
+int argumentList(int argc, char **argv, struct Array *array) {
     printf("started processing...\n");
-    int numberOfListArgument=1;
+    int numberOfListArgument = 1;
     for (; numberOfListArgument < argc; numberOfListArgument++) {
         enum CMD currentCommand = NO_COMMAND;
         for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
             if (strcmp(argv[numberOfListArgument], commands[numberOfCommand].name) == 0) {
-                printf("%s...\n",commands[numberOfCommand].name);
-                currentCommand=commands->type;
+                printf("%s...\n", commands[numberOfCommand].name);
+                currentCommand = commands->type;
                 char **args = NULL;
                 args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
-                for (int numberOfCommandArgument = 0; numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
+                for (int numberOfCommandArgument = 0;
+                     numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
                     numberOfListArgument++;
                     args[numberOfCommandArgument] = argv[numberOfListArgument];
                 }
                 int ret = commands[numberOfCommand].fun(array, args);
                 if (args != NULL)free(args);
-                if(ret >= 0)return ret;
+                if (ret >= 0)return ret;
             }
         }
         if (currentCommand == NO_COMMAND) {
@@ -155,13 +175,8 @@ int argumentList(int argc, char ** argv, struct Array *array) {
 }
 
 int main(int argc, char **argv) {
-    struct Array array;
-    int exitCode = argumentList(argc,argv,&array);
-
-    for (int i = 0; i < argc; i++) {
-        printf("%s\n", argv[i]);
-    }
-
+    struct Array array = {NULL, 0};
+    int exitCode = argumentList(argc, argv, &array);
 
     while (exitCode == -1) {
         printf("\n> ");

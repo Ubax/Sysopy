@@ -9,6 +9,7 @@
 
 
 void findAndSaveResultToTemporaryFile(char *directory, char *fileName, char *tempFileName) {
+    if(CONSOLE_LOG)printf("\texecuting find and saving result to temporary file...\n");
     char command[strlen(directory) + strlen(fileName) + 30];
     strcpy(command, "find ");
     strcat(command, directory);
@@ -17,6 +18,7 @@ void findAndSaveResultToTemporaryFile(char *directory, char *fileName, char *tem
     strcat(command, "\" > ");
     strcat(command, tempFileName);
     system(command);
+    if(CONSOLE_LOG)printf("\tdone\n");
 }
 
 size_t fileSize(FILE *f) {
@@ -113,7 +115,6 @@ void emptyArrayAndBlocks(struct Array* array) {
         if(CONSOLE_LOG)printf("\tfreeing memory blocks...\n");
         for (int i = 0; i < array->size; i++) {
             if (array->block[i] != NULL) {
-                if(CONSOLE_LOG)printf("\t\t%i\n",i);
                 free(array->block[i]);
             }
         }
