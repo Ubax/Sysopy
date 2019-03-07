@@ -40,13 +40,14 @@ int createTable(struct Array *array, char **args) {
     size_t size;
     int error = 0;
     printf("%s",args[0]);
-    size = strToSizeT(args[0], &);
+    size = strToSizeT(args[0], &error);
+    printf("%lu", size);
     if (error < 0) {
         printf("Bad input");
         return 3;
     }
     if (size > 0) {
-        if (array != NULL)emptyArrayAndBlocks(array);
+        if (array->size > 0)emptyArrayAndBlocks(array);
         if (createEmptyArray(array, size) != 0) {
             printf("Not enough memory for a table\n");
             return 4;
@@ -57,10 +58,6 @@ int createTable(struct Array *array, char **args) {
 }
 
 int searchDirectory(struct Array *array, char **args) {
-    const size_t dirLength = 4097;
-    const size_t fileLength = 256;
-    const size_t nameFileTmpLength = 256;
-
     char *dir;
     char *file;
     char *fileTmp;
@@ -93,7 +90,7 @@ const struct Command commands[NUMBER_OF_COMMANDS] = {
         {"create_table",     1, CREATE_TABLE, createTable},
         {"search_directory", 1, SEARCH_DIRECTORY, searchDirectory},
         {"remove_block",     1, REMOVE_BLOCK, NULL},
-        {"exit",             1, EXIT, my_exit},
+        {"exit",             0, EXIT, my_exit},
         {"add_to_table",     1, ADD_TO_TABLE, addToTable}
 };
 
@@ -101,13 +98,13 @@ int processCommand(char *cmd, struct Array *array) {
     enum CMD currentCommand = NO_COMMAND;
     for (int i = 0; i < NUMBER_OF_COMMANDS; i++) {
         if (strcmp(cmd, commands[i].name) == 0){
-            char ** args = calloc(commands->numberOfArguments, sizeof(char*));
-            for(int i=0;i<commands->numberOfArguments;i++){
+            char ** args = calloc(commands[i].numberOfArguments, sizeof(char*));
+            for(int i=0;i<commands[i].numberOfArguments;i++){
                 args[i]=calloc(4097, sizeof(char));
                 scanf("%s", args[i]);
                 printf("%s",args[i]);
             }
-            return commands->fun(array, args);
+            return commands[i].fun(array, args);
         }
     }
     if(currentCommand == NO_COMMAND){

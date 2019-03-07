@@ -77,12 +77,12 @@ void deleteBlockFromArray(struct Array* array, int i) {
 }
 
 void emptyArrayAndBlocks(struct Array* array) {
-    if (array != NULL) {
+    if (array->block != NULL) {
         for (int i = 0; i < array->size; i++) {
             if (array->block[i] != NULL) {
                 free(array->block[i]);
             }
         }
-        free(array);
+        free(array->block);
     }
 }
