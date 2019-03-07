@@ -5,14 +5,6 @@
 
 #define NUMBER_OF_COMMANDS 5
 
-const char *commands[NUMBER_OF_COMMANDS] = {
-        "create_table",
-        "search_directory",
-        "remove_block",
-        "exit",
-        "add_to_table"
-};
-
 enum CMD {
     NO_COMMAND = -1,
     CREATE_TABLE = 0,
@@ -22,14 +14,19 @@ enum CMD {
     ADD_TO_TABLE = 4,
 };
 
-size_t readSizeT(int *error) {
+struct Command {
+    char *name;
+    int numberOfArguments;
+    enum CMD type;
+    int (*fun)(struct Array *array, char **args);
+};
+
+size_t strToSizeT(char* str, int *error) {
     *error = 0;
     size_t ret = 0;
-    char str[13];
-    scanf("%13s", str);
     int i = 0;
     //if (str[i] == '-')i++;
-    while (i < 12 && str[i] != '\0') {
+    while (str[i] != '\0') {
         if (str[i] < '0' || str[i] > '9')break;
         ret = ret * 10 + str[i] - '0';
         i++;
@@ -39,86 +36,92 @@ size_t readSizeT(int *error) {
     return ret;
 }
 
-void createTable(struct Array* array) {
+int createTable(struct Array *array, char **args) {
     size_t size;
     int error = 0;
-    size = readSizeT(&error);
+    printf("%s",args[0]);
+    size = strToSizeT(args[0], &);
     if (error < 0) {
         printf("Bad input");
-        return;
+        return 3;
     }
     if (size > 0) {
         if (array != NULL)emptyArrayAndBlocks(array);
         if (createEmptyArray(array, size) != 0) {
             printf("Not enough memory for a table\n");
-            return;
+            return 4;
         }
         printf("Table created\n");
-    }
-}
-
-void searchDirectory(struct Array* array) {
-    const size_t dirLength = 4097;
-    const size_t fileLength = 256;
-    const size_t nameFileTmpLength = 256;
-
-    char dir[dirLength];
-    char file[fileLength];
-    char fileTmp[nameFileTmpLength];
-
-    scanf("%4096s", dir);
-    scanf("%255s", file);
-    scanf("%255s", fileTmp);
-
-    if (dir == NULL || strlen(dir) == 0 || file == NULL || strlen(file) == 0 || fileTmp == NULL ||
-        strlen(fileTmp) == 0)
-        return;
-
-    findAndSaveResultToTemporaryFile(dir, file, fileTmp);
-}
-
-void addToTable(struct Array* array) {
-    const size_t nameFileTmpLength = 256;
-    char fileTmp[nameFileTmpLength];
-    scanf("%255s", fileTmp);
-    if (fileTmp == NULL || strlen(fileTmp) == 0)
-        return;
-    addTemporaryFileBlockPointerToArray(array, fileTmp);
-}
-
-int processCommand(char * cmd, struct Array* array){
-    enum CMD currentCommand = NO_COMMAND;
-    for (int i = 0; i < NUMBER_OF_COMMANDS; i++) {
-        if (strcmp(cmd, commands[i]) == 0)currentCommand = i;
-    }
-    switch (currentCommand) {
-        case CREATE_TABLE:
-            createTable(array);
-            break;
-        case SEARCH_DIRECTORY:
-            searchDirectory(array);
-            break;
-        case REMOVE_BLOCK:
-
-            break;
-        case ADD_TO_TABLE:
-            addToTable(array);
-            break;
-        case EXIT:
-            emptyArrayAndBlocks(array);
-            return 0;
-            break;
-        default:
-            printf("command %s not known", cmd);
     }
     return -1;
 }
 
-int main(int argc, char ** argv) {
+int searchDirectory(struct Array *array, char **args) {
+    const size_t dirLength = 4097;
+    const size_t fileLength = 256;
+    const size_t nameFileTmpLength = 256;
+
+    char *dir;
+    char *file;
+    char *fileTmp;
+
+    dir = args[0];
+    file = args[1];
+    fileTmp = args[2];
+
+    if (dir == NULL || strlen(dir) == 0 || file == NULL || strlen(file) == 0 || fileTmp == NULL ||
+        strlen(fileTmp) == 0)
+        return 2;
+
+    findAndSaveResultToTemporaryFile(dir, file, fileTmp);
+}
+
+int addToTable(struct Array *array, char **args) {
+    const size_t nameFileTmpLength = 256;
+    char fileTmp[nameFileTmpLength];
+    scanf("%255s", fileTmp);
+    if (fileTmp == NULL || strlen(fileTmp) == 0)
+        return 1;
+    addTemporaryFileBlockPointerToArray(array, fileTmp);
+}
+
+int my_exit(struct Array *array, char **args) {
+    return 0;
+}
+
+const struct Command commands[NUMBER_OF_COMMANDS] = {
+        {"create_table",     1, CREATE_TABLE, createTable},
+        {"search_directory", 1, SEARCH_DIRECTORY, searchDirectory},
+        {"remove_block",     1, REMOVE_BLOCK, NULL},
+        {"exit",             1, EXIT, my_exit},
+        {"add_to_table",     1, ADD_TO_TABLE, addToTable}
+};
+
+int processCommand(char *cmd, struct Array *array) {
+    enum CMD currentCommand = NO_COMMAND;
+    for (int i = 0; i < NUMBER_OF_COMMANDS; i++) {
+        if (strcmp(cmd, commands[i].name) == 0){
+            char ** args = calloc(commands->numberOfArguments, sizeof(char*));
+            for(int i=0;i<commands->numberOfArguments;i++){
+                args[i]=calloc(4097, sizeof(char));
+                scanf("%s", args[i]);
+                printf("%s",args[i]);
+            }
+            return commands->fun(array, args);
+        }
+    }
+    if(currentCommand == NO_COMMAND){
+        printf("command %s not known", cmd);
+        return 3;
+    }
+    return -1;
+}
+
+int main(int argc, char **argv) {
     struct Array array;
     int exitCode = -1;
 
-    for(int i=0;i<argc;i++){
+    for (int i = 0; i < argc; i++) {
         printf("%s\n", argv[i]);
     }
 
@@ -128,5 +131,5 @@ int main(int argc, char ** argv) {
         scanf("%254s", cmd);
         exitCode = processCommand(cmd, &array);
     }
-    return 0;
+    return exitCode;
 }
