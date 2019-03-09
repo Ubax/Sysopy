@@ -3,7 +3,6 @@
 #include <string.h>
 #include <time.h>
 #include <sys/times.h>
-#include <zconf.h>
 #include "zad1lib/library.h"
 
 #define NUMBER_OF_COMMANDS 6
