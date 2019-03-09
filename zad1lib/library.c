@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define INITIAL_ARRAY_LENGTH 20
-#define CONSOLE_LOG 1
+#define CONSOLE_LOG 0
 
 
 void findAndSaveResultToTemporaryFile(char *directory, char *fileName, char *tempFileName) {

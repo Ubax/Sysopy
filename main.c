@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/times.h>
+#include <zconf.h>
 #include "zad1lib/library.h"
 
 #define NUMBER_OF_COMMANDS 6
@@ -162,7 +163,13 @@ int console(struct Array *array) {
 
 int argumentList(int argc, char **argv, struct Array *array) {
     printf("started processing...\n");
-    int numberOfListArgument = 1;
+    if(argc<2){
+        printf("Program expects at last 1 argument\n");
+    }
+    char* create_table_args[] = {argv[1]};
+    int r = createTable(array, create_table_args);
+    if(r>=0)return r;
+    int numberOfListArgument = 2;
     for (; numberOfListArgument < argc; numberOfListArgument++) {
         enum CMD currentCommand = NO_COMMAND;
         for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
@@ -218,8 +225,8 @@ int main(int argc, char **argv) {
     dur = stop.tv_sec - start.tv_sec + (stop.tv_nsec - start.tv_nsec)*1.0/1000000000;
 
     printf("Real time: %lf s\n", dur);
-    printf("Cpu user time: %lu s\n", en_cpu.tms_utime - st_cpu.tms_utime);
-    printf("Cpu system time: %lu s\n", en_cpu.tms_stime - st_cpu.tms_stime);
+    printf("Cpu user time: %lf s\n", (double)(en_cpu.tms_utime - st_cpu.tms_utime));
+    printf("Cpu system time: %lf s\n", (double)(en_cpu.tms_stime - st_cpu.tms_stime));
 
     /*while (exitCode == -1) {
         printf("\n> ");
