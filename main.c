@@ -85,7 +85,6 @@ int searchDirectory(struct Array *array, char **args) {
 
 int addToTable(struct Array *array, char **args) {
     printf("\tadd_to_table...\n");
-    const size_t nameFileTmpLength = 256;
     char *fileTmp = args[0];
     if (fileTmp == NULL || strlen(fileTmp) == 0)
         return 2;
@@ -228,6 +227,8 @@ int main(int argc, char **argv) {
     printf("Cpu user time: %Lf s\n", (long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK));
     printf("Cpu system time: %Lf s\n", (long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
 
+    int i=1;
+    int b=0;
     /*while (exitCode == -1) {
         printf("\n> ");
         exitCode = console(&array);
