@@ -227,8 +227,6 @@ int main(int argc, char **argv) {
     printf("Cpu user time: %Lf s\n", (long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK));
     printf("Cpu system time: %Lf s\n", (long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
 
-    int i=1;
-    int b=0;
     /*while (exitCode == -1) {
         printf("\n> ");
         exitCode = console(&array);
