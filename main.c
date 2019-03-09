@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/times.h>
+#include <unistd.h>
 #include "zad1lib/library.h"
 
 #define NUMBER_OF_COMMANDS 6
@@ -224,8 +225,8 @@ int main(int argc, char **argv) {
     dur = stop.tv_sec - start.tv_sec + (stop.tv_nsec - start.tv_nsec)*1.0/1000000000;
 
     printf("Real time: %lf s\n", dur);
-    printf("Cpu user time: %lf s\n", (double)(en_cpu.tms_utime - st_cpu.tms_utime));
-    printf("Cpu system time: %lf s\n", (double)(en_cpu.tms_stime - st_cpu.tms_stime));
+    printf("Cpu user time: %Lf s\n", (long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK));
+    printf("Cpu system time: %Lf s\n", (long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
 
     /*while (exitCode == -1) {
         printf("\n> ");
