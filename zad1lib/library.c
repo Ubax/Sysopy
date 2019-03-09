@@ -6,6 +6,7 @@
 
 #define INITIAL_ARRAY_LENGTH 20
 #define CONSOLE_LOG 0
+#define ERROR_LOG 1
 
 
 void findAndSaveResultToTemporaryFile(char *directory, char *fileName, char *tempFileName) {
@@ -32,7 +33,7 @@ char *readTemporaryFile(char *fileName) {
     if(CONSOLE_LOG)printf("\treading temporary file...\n");
     FILE *file = fopen(fileName, "r");
     if (file == NULL) {
-        printf("No temporary file with that name\n");
+        if(ERROR_LOG)printf("No temporary file with that name\n");
         return NULL;
     }
 
@@ -55,7 +56,7 @@ int createEmptyArray(struct Array* array, size_t size) {
     if(CONSOLE_LOG)printf("\t\tsize: %lu\n", size);
     array->block = calloc(size, sizeof(char *));
     if (array->block == NULL){
-        if(CONSOLE_LOG)printf("Couldn't create array in memory\n");
+        if(ERROR_LOG)printf("Couldn't create array in memory\n");
         return -1;
     }
 
@@ -77,7 +78,7 @@ int addTemporaryFileBlockPointerToArray(struct Array* array, char *tempFileName)
     if(CONSOLE_LOG)printf("\tadding temporary file block pointer to array...\n");
     int i = 0;
     if (array->size < 1 || array->block == NULL){
-        if(CONSOLE_LOG)printf("Array not created\n");
+        if(ERROR_LOG)printf("Array not created\n");
         return -1;
     }
     if(CONSOLE_LOG)printf("\tlooking for first empty cell...\n");
@@ -87,7 +88,7 @@ int addTemporaryFileBlockPointerToArray(struct Array* array, char *tempFileName)
     if (i == array->size){
         if(CONSOLE_LOG)printf("\tresizing array...\n");
         if (!realloc(array, ++array->size)){
-            if(CONSOLE_LOG)printf("couldn't resize array\n");
+            if(ERROR_LOG)printf("couldn't resize array\n");
             return -1;
         }
     }
@@ -99,7 +100,7 @@ int addTemporaryFileBlockPointerToArray(struct Array* array, char *tempFileName)
 void deleteBlockFromArray(struct Array* array, int i) {
     if(CONSOLE_LOG)printf("\tdeleting block from array...\n");
     if (i >= array->size || array->block[i] == NULL){
-        if(CONSOLE_LOG)printf("specified index cell empty\n");
+        if(ERROR_LOG)printf("specified index cell empty\n");
         return;
     }
     if(CONSOLE_LOG)printf("\tfreeing array block...\n");
