@@ -8,9 +8,9 @@ set(CMAKE_CXX_FLAGS "-Wall -pedantic -Wextra")
 set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
 
-add_library(libZad1 ${LIBRARY_SRC})
-add_executable(zad1 ${SOURCE_FILES})
+add_library(libCw01 ${LIBRARY_SRC})
+add_executable(cw01 ${SOURCE_FILES})
 
-target_link_libraries(zad1 zad1lib)
-target_compile_options(zad1 PRIVATE "-Wall")
+target_link_libraries(cw01 libCw01)
+target_compile_options(cw01 PRIVATE "-Wall")
 

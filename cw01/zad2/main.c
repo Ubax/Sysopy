@@ -4,7 +4,7 @@
 #include <time.h>
 #include <sys/times.h>
 #include <unistd.h>
-#include "zad1lib/library.h"
+#include "library.h"
 
 #define NUMBER_OF_COMMANDS 6
 
@@ -164,6 +164,7 @@ int argumentList(int argc, char **argv, struct Array *array) {
     printf("started processing...\n");
     if(argc<2){
         printf("Program expects at last 1 argument\n");
+        return 1;
     }
     char* create_table_args[] = {argv[1]};
     int r = createTable(array, create_table_args);
@@ -205,8 +206,8 @@ int main(int argc, char **argv) {
     static struct tms en_cpu;
 
     if (clock_gettime(CLOCK_REALTIME, &start) == -1) {
-        perror("clock gettime");
-        exit(EXIT_FAILURE);
+        printf("Problem with clock\n");
+        return 1;
     }
 
 
@@ -217,8 +218,8 @@ int main(int argc, char **argv) {
     times(&en_cpu);
 
     if (clock_gettime(CLOCK_REALTIME, &stop) == -1) {
-        perror("clock gettime");
-        exit(EXIT_FAILURE);
+        printf("Problem with clock\n");
+        return 1;
     }
 
     dur = stop.tv_sec - start.tv_sec + (stop.tv_nsec - start.tv_nsec)*1.0/1000000000;
