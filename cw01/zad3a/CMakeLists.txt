@@ -53,39 +53,39 @@ target_compile_options(cw01_dynamic PRIVATE "-ldl -D DLL -Wall")
 
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND echo "---- STATIC SMALL ----" >> ${RESULTS_FILE} >> &./cw01_static ${SMALL_TEST}
+        POST_BUILD COMMAND echo "---- STATIC SMALL ----" >> ${RESULTS_FILE} & ./cw01_static ${SMALL_TEST}
 )
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND echo "---- STATIC MEDIUM ----" >> ${RESULTS_FILE} >> &./cw01_static ${MEDIUM_TEST}
+        POST_BUILD COMMAND echo "---- STATIC MEDIUM ----" >> ${RESULTS_FILE} & ./cw01_static ${MEDIUM_TEST}
 )
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND echo "---- STATIC BIG ----" >> ${RESULTS_FILE} >> &./cw01_static ${BIG_TEST}
+        POST_BUILD COMMAND echo "---- STATIC BIG ----" >> ${RESULTS_FILE} & ./cw01_static ${BIG_TEST}
 )
 
 add_custom_command(
         TARGET cw01_shared
-        POST_BUILD COMMAND echo "---- SHARED SMALL ----" >> ${RESULTS_FILE} >> &./cw01_shared ${SMALL_TEST}
+        POST_BUILD COMMAND echo "---- SHARED SMALL ----" >> ${RESULTS_FILE}  & ./cw01_shared ${SMALL_TEST}
 )
 add_custom_command(
         TARGET cw01_shared
-        POST_BUILD COMMAND echo "---- SHARED MEDIUM ----" >> ${RESULTS_FILE} >> &./cw01_shared ${MEDIUM_TEST}
+        POST_BUILD COMMAND echo "---- SHARED MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_shared ${MEDIUM_TEST}
 )
 add_custom_command(
         TARGET cw01_shared
-        POST_BUILD COMMAND echo "---- SHARED BIG ----" >> ${RESULTS_FILE} >> &./cw01_shared ${BIG_TEST}
+        POST_BUILD COMMAND echo "---- SHARED BIG ----" >> ${RESULTS_FILE}  & ./cw01_shared ${BIG_TEST}
 )
 
 add_custom_command(
         TARGET cw01_dynamic
-        POST_BUILD COMMAND echo "---- DYNAMIC SMALL ----" >> ${RESULTS_FILE} >> &./cw01_dynamic ${SMALL_TEST}
+        POST_BUILD COMMAND echo "---- DYNAMIC SMALL ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${SMALL_TEST}
 )
 add_custom_command(
         TARGET cw01_dynamic
-        POST_BUILD COMMAND echo "---- DYNAMIC MEDIUM ----" >> ${RESULTS_FILE} >> &./cw01_dynamic ${MEDIUM_TEST}
+        POST_BUILD COMMAND echo "---- DYNAMIC MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${MEDIUM_TEST}
 )
 add_custom_command(
         TARGET cw01_dynamic
-        POST_BUILD COMMAND echo "---- DYNAMIC BIG ----" >> ${RESULTS_FILE} >> &./cw01_dynamic ${BIG_TEST}
+        POST_BUILD COMMAND echo "---- DYNAMIC BIG ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${BIG_TEST}
 )
