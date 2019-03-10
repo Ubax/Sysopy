@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "-Wall -pedantic -Wextra")
 set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
 
-add_library(libZad1 SHARED ${LIBRARY_SRC})
+add_library(libZad1 ${LIBRARY_SRC})
 add_executable(zad1 ${SOURCE_FILES})
 
 target_link_libraries(zad1 zad1lib)
