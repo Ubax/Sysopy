@@ -1,0 +1,52 @@
+--------- PRZESZUKIWANIE ----------
+--- MALE ---
+Real time: 0.002381 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- SREDNIE ---
+Real time: 1.611938 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- DUZE ---
+Real time: 13.160244 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--------- PRZESZUKIWANIE I DODAWANIE DO PAMIECI----------
+--- MALE ---
+Real time: 0.002197 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- SREDNIE ---
+Real time: 1.674140 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- DUZE ---
+Real time: 12.931715 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--------- PRZESZUKIWANIE, DODAWANIE I USOWANIE Z PAMIECI----------
+Real time: 0.002526 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- SREDNIE ---
+Real time: 1.570711 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- DUZE ---
+Real time: 12.487427 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--------- PRZESZUKANIE, NAPRZEMIENNE DODAWANIE I USOWANIE Z PAMIECI----------
+Real time: 12.575659 s
+Cpu user time: 0.040000 s
+Cpu system time: 0.000000 s
+Real time: 12.616678 s
