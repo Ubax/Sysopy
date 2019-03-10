@@ -8,4 +8,7 @@ set(CMAKE_CXX_FLAGS "-Wall -pedantic -Wextra")
 set(LIBRARY_SRC library.c)
 
 add_library(libZad1 SHARED ${LIBRARY_SRC})
-add_library(libZad1 STATIC ${LIBRARY_SRC})
+add_library(libZad1Static STATIC ${LIBRARY_SRC})
+
+SET_TARGET_PROPERTIES(libZad1 PROPERTIES OUTPUT_NAME lib_zad1 CLEAN_DIRECT_OUTPUT 1)
+SET_TARGET_PROPERTIES(libZad1Static PROPERTIES OUTPUT_NAME lib_zad1 CLEAN_DIRECT_OUTPUT 1)
