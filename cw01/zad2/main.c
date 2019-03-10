@@ -241,15 +241,15 @@ int main(int argc, char **argv) {
     printf("Cpu user time: %Lf s\n", (long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK));
     printf("Cpu system time: %Lf s\n", (long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
 
-    FILE* fp = fopen("result2.txt", "a");
+    FILE* fp = fopen("raport2.txt", "a");
     fprintf(fp, "Real time: %lf s\nCpu user time: %Lf s\nCpu system time: %Lf s\n",dur,(long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK),(long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
     fclose(fp);
-    #if CONSOLE > 0
+#if CONSOLE > 0
     while (exitCode == -1) {
         printf("\n> ");
         exitCode = console(&array);
     }
-    #endif
+#endif
     emptyArrayAndBlocks(&array);
     return exitCode == -1 ? 0 : exitCode;
 }
