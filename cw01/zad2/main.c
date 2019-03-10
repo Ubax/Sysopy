@@ -4,8 +4,21 @@
 #include <time.h>
 #include <sys/times.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include "library.h"
 
+#define LOG 0
+
+static inline void my_log(const char* msg, ...){
+#if LOG > 0
+    va_list ap;
+    va_start(ap, msg);
+    vprintf(msg, ap);
+    va_end(ap);
+#endif
+}
+
+#define CONSOLE 0
 #define NUMBER_OF_COMMANDS 6
 
 enum CMD {
@@ -42,30 +55,30 @@ size_t strToSizeT(char *str, int *error) {
 }
 
 int createTable(struct Array *array, char **args) {
-    printf("\tcreate_table...\n");
+    my_log("\tcreate_table...\n");
     size_t size;
     int error = 0;
-    printf("\t\targs: %s\n", args[0]);
+    my_log("\t\targs: %s\n", args[0]);
     size = strToSizeT(args[0], &error);
-    printf("\t\tafter conversion: %lu\n", size);
+    my_log("\t\tafter conversion: %lu\n", size);
     if (error < 0) {
         printf("Bad input\n");
         return 4;
     }
     if (size > 0) {
-        printf("\t\tsize>0: true\n");
+        my_log("\t\tsize>0: true\n");
         if (array->size > 0)emptyArrayAndBlocks(array);
         if (createEmptyArray(array, size) != 0) {
             printf("Not enough memory for a table\n");
             return 4;
         }
-        printf("\tTable created\n");
+        my_log("\tTable created\n");
     }
     return -1;
 }
 
 int searchDirectory(struct Array *array, char **args) {
-    printf("\tsearch_directory...\n");
+    my_log("\tsearch_directory...\n");
     char *dir;
     char *file;
     char *fileTmp;
@@ -77,18 +90,18 @@ int searchDirectory(struct Array *array, char **args) {
     if (dir == NULL || strlen(dir) == 0 || file == NULL || strlen(file) == 0 || fileTmp == NULL ||
         strlen(fileTmp) == 0)
         return 3;
-    printf("\tall arguments seem to be correct...\n");
+    my_log("\tall arguments seem to be correct...\n");
 
     findAndSaveResultToTemporaryFile(dir, file, fileTmp);
     return -1;
 }
 
 int addToTable(struct Array *array, char **args) {
-    printf("\tadd_to_table...\n");
+    my_log("\tadd_to_table...\n");
     char *fileTmp = args[0];
     if (fileTmp == NULL || strlen(fileTmp) == 0)
         return 2;
-    printf("\tall arguments seem to be correct...\n");
+    my_log("\tall arguments seem to be correct...\n");
     addTemporaryFileBlockPointerToArray(array, fileTmp);
     return -1;
 }
@@ -100,15 +113,15 @@ int my_exit(struct Array *array, char **args) {
 int removeBlock(struct Array *array, char **args) {
     size_t index;
     int error = 0;
-    printf("\t\targs: %s\n", args[0]);
+    my_log("\t\targs: %s\n", args[0]);
     index = strToSizeT(args[0], &error);
-    printf("\t\tafter conversion: %lu\n", index);
+    my_log("\t\tafter conversion: %lu\n", index);
     if (error < 0) {
         printf("Bad input\n");
         return 4;
     }
     if (index >= 0) {
-        printf("\t\tindex>=0: true\n");
+        my_log("\t\tindex>=0: true\n");
         deleteBlockFromArray(array, index);
     }
     return -1;
@@ -161,7 +174,7 @@ int console(struct Array *array) {
 }
 
 int argumentList(int argc, char **argv, struct Array *array) {
-    printf("started processing...\n");
+    my_log("started processing...\n");
     if(argc<2){
         printf("Program expects at last 1 argument\n");
         return 1;
@@ -174,7 +187,7 @@ int argumentList(int argc, char **argv, struct Array *array) {
         enum CMD currentCommand = NO_COMMAND;
         for (int numberOfCommand = 0; numberOfCommand < NUMBER_OF_COMMANDS; numberOfCommand++) {
             if (strcmp(argv[numberOfListArgument], commands[numberOfCommand].name) == 0) {
-                printf("%s...\n", commands[numberOfCommand].name);
+                my_log("%s...\n", commands[numberOfCommand].name);
                 currentCommand = commands->type;
                 char **args = NULL;
                 args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
@@ -197,7 +210,7 @@ int argumentList(int argc, char **argv, struct Array *array) {
 }
 
 int main(int argc, char **argv) {
-    printf("Systemy Operacyjne 2019\nAuthor: Jakub Tkacz\nVesrion:1.0\nDate:07.03.2019\n\n");
+    my_log("Systemy Operacyjne 2019\nAuthor: Jakub Tkacz\nVesrion:1.1\nDate:10.03.2019\n\n");
     struct Array array = {NULL, 0};
 
     struct timespec start, stop;
@@ -231,9 +244,11 @@ int main(int argc, char **argv) {
     FILE* fp = fopen("result2.txt", "a");
     fprintf(fp, "Real time: %lf s\nCpu user time: %Lf s\nCpu system time: %Lf s\n",dur,(long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK),(long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
     fclose(fp);
-    /*while (exitCode == -1) {
+    #if CONSOLE > 0
+    while (exitCode == -1) {
         printf("\n> ");
         exitCode = console(&array);
-    }*/
+    }
+    #endif
     return exitCode == -1 ? 0 : exitCode;
 }
