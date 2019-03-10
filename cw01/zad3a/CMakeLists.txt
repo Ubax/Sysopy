@@ -6,16 +6,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
-#set(RESULTS_FILE results3a.txt)
+set(RESULTS_FILE results3a.txt)
 
-set(SMALL_TEST 100 search_directory ~ "*.txt" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
+set(SMALL_TEST 100 search_directory . \"*.txt\" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
         remove_block 0)
 
-set(MEDIUM_TEST 100 search_directory ~ "*.txt" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
+set(MEDIUM_TEST 100 search_directory ~ \"*.txt\" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
         remove_block 0
         )
 
-set(BIG_TEST 100 search_directory / "*.txt" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
+set(BIG_TEST 100 search_directory / \"*.txt\" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
         remove_block 0 )
 
 add_library(libCw01_static STATIC ${LIBRARY_SRC})
@@ -32,42 +32,42 @@ target_link_libraries(cw01_dynamic dl)
 
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND  ./cw01_static ${SMALL_TEST}
+        POST_BUILD COMMAND  echo "---- STATIC SMALL ----" >> ${RESULTS_FILE}  & ./cw01_static ${SMALL_TEST}
 )
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND  ./cw01_static ${MEDIUM_TEST}
+        POST_BUILD COMMAND  echo "---- STATIC MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_static ${MEDIUM_TEST}
 )
 add_custom_command(
         TARGET cw01_static
-        POST_BUILD COMMAND  ./cw01_static ${BIG_TEST}
+        POST_BUILD COMMAND  echo "---- STATIC BIG ----" >> ${RESULTS_FILE}  & ./cw01_static ${BIG_TEST}
 )
 
-#add_custom_command(
-#        TARGET cw01_shared
-#        POST_BUILD COMMAND echo "---- SHARED SMALL ----" >> ${RESULTS_FILE}  & ./cw01_shared ${SMALL_TEST}
-#)
-#add_custom_command(
-#        TARGET cw01_shared
-#        POST_BUILD COMMAND echo "---- SHARED MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_shared ${MEDIUM_TEST}
-#)
-#add_custom_command(
-#        TARGET cw01_shared
-#        POST_BUILD COMMAND echo "---- SHARED BIG ----" >> ${RESULTS_FILE}  & ./cw01_shared ${BIG_TEST}
-#)
-#
-#add_custom_command(
-#        TARGET cw01_dynamic
-#        POST_BUILD COMMAND echo "---- DYNAMIC SMALL ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${SMALL_TEST}
-#)
-#add_custom_command(
-#        TARGET cw01_dynamic
-#        POST_BUILD COMMAND echo "---- DYNAMIC MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${MEDIUM_TEST}
-#)
-#add_custom_command(
-#        TARGET cw01_dynamic
-#        POST_BUILD COMMAND echo "---- DYNAMIC BIG ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${BIG_TEST}
-#)
+add_custom_command(
+        TARGET cw01_shared
+        POST_BUILD COMMAND echo "---- SHARED SMALL ----" >> ${RESULTS_FILE}  & ./cw01_shared ${SMALL_TEST}
+)
+add_custom_command(
+        TARGET cw01_shared
+        POST_BUILD COMMAND echo "---- SHARED MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_shared ${MEDIUM_TEST}
+)
+add_custom_command(
+        TARGET cw01_shared
+        POST_BUILD COMMAND echo "---- SHARED BIG ----" >> ${RESULTS_FILE}  & ./cw01_shared ${BIG_TEST}
+)
+
+add_custom_command(
+        TARGET cw01_dynamic
+        POST_BUILD COMMAND echo "---- DYNAMIC SMALL ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${SMALL_TEST}
+)
+add_custom_command(
+        TARGET cw01_dynamic
+        POST_BUILD COMMAND echo "---- DYNAMIC MEDIUM ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${MEDIUM_TEST}
+)
+add_custom_command(
+        TARGET cw01_dynamic
+        POST_BUILD COMMAND echo "---- DYNAMIC BIG ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${BIG_TEST}
+)
 
 target_compile_options(cw01_static PRIVATE "-Wall")
 target_compile_options(cw01_shared PRIVATE "-Wall")
