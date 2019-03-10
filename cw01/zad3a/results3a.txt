@@ -1,0 +1,42 @@
+---- SHARED SMALL ----
+Real time: 0.002430 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC SMALL ----
+Real time: 0.004234 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC SMALL ----
+Real time: 0.002158 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+---- DYNAMIC MEDIUM ----
+Real time: 1.775210 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED MEDIUM ----
+Real time: 1.785492 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC MEDIUM ----
+Real time: 1.673374 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+---- DYNAMIC BIG ----
+Real time: 13.582332 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED BIG ----
+Real time: 13.582486 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC BIG ----
+Real time: 14.660648 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+
+--- KOMENTARZ ---
+Jak możemy zauważyć w przypadku małych danych (niski poziom rozgałęzienia katalogów), program ładujący bibliotekę dynamicznie działał wolniej niż pozostałe dwie wersje. 
+Wynika to z tego iż biblioteka jest w tym przypadku ładowana dynamicznie podczas działania programu. 
