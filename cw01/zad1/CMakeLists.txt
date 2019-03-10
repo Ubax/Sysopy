@@ -5,12 +5,7 @@ set(CMAKE_C_STANDARD 99)
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS "-Wall -pedantic -Wextra")
 
-set(LIBRARY_SRC zad1lib/library.c)
-set(SOURCE_FILES main.c)
+set(LIBRARY_SRC library.c)
 
 add_library(libZad1 SHARED ${LIBRARY_SRC})
-add_executable(zad1 ${SOURCE_FILES})
-
-target_link_libraries(zad1 zad1lib)
-target_compile_options(zad1 PRIVATE "-Wall")
-
+add_library(libZad1 STATIC ${LIBRARY_SRC})

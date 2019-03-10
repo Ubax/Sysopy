@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 99)
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS "-Wall -pedantic -Wextra")
 
-set(LIBRARY_SRC zad1lib/library.c)
+set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
 
 add_library(libZad1 SHARED ${LIBRARY_SRC})
