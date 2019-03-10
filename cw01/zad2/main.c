@@ -250,5 +250,6 @@ int main(int argc, char **argv) {
         exitCode = console(&array);
     }
     #endif
+    emptyArrayAndBlocks(&array);
     return exitCode == -1 ? 0 : exitCode;
 }
