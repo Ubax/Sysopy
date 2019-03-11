@@ -193,7 +193,7 @@ int argumentList(int argc, char **argv, struct Array *array) {
                 args = calloc(commands[numberOfCommand].numberOfArguments, sizeof(char *));
                 for (int numberOfCommandArgument = 0;
                      numberOfCommandArgument < commands[numberOfCommand].numberOfArguments; numberOfCommandArgument++) {
-                    numberOfListArgument++;
+                    if(++numberOfListArgument >= argc)return 2;
                     args[numberOfCommandArgument] = argv[numberOfListArgument];
                 }
                 int ret = commands[numberOfCommand].fun(array, args);
