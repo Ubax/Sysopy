@@ -32,7 +32,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall ${OPTIMALIZATION_FLAG}")
 
 set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
-set(RESULTS_FILE results3a.txt)
+set(RESULTS_FILE results3b.txt)
 
 set(SMALL_TEST 100 search_directory . \"*.txt\" tmp.txt add_to_table tmp.txt remove_block 0 add_to_table tmp.txt
         remove_block 0)
