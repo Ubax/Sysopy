@@ -24,6 +24,7 @@ endif(OPTIMALIZATION_TYPE STREQUAL O1)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${OPTIMALIZATION_FLAG}")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall ${OPTIMALIZATION_FLAG}")
 
 set(LIBRARY_SRC library.c)
 set(SOURCE_FILES main.c)
@@ -50,6 +51,10 @@ target_link_libraries(cw01_static libCw01_static)
 target_link_libraries(cw01_shared libCw01_shared)
 target_link_libraries(cw01_dynamic libCw01_shared)
 target_link_libraries(cw01_dynamic dl)
+
+target_compile_options(cw01_static PRIVATE "-Wall")
+target_compile_options(cw01_shared PRIVATE "-Wall")
+target_compile_options(cw01_dynamic PRIVATE "-ldl -D DLL -Wall")
 
 add_custom_command(
         TARGET cw01_static
@@ -90,7 +95,5 @@ add_custom_command(
         POST_BUILD COMMAND echo "---- DYNAMIC BIG ----" >> ${RESULTS_FILE}  & ./cw01_dynamic ${BIG_TEST}
 )
 
-target_compile_options(cw01_static PRIVATE "-Wall ${OPTIMALIZATION_FLAG}")
-target_compile_options(cw01_shared PRIVATE "-Wall ${OPTIMALIZATION_FLAG}")
-target_compile_options(cw01_dynamic PRIVATE "-ldl -D DLL -Wall ${OPTIMALIZATION_FLAG}")
+
 
