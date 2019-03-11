@@ -244,6 +244,8 @@ int main(int argc, char **argv) {
     FILE* fp = fopen("results3b.txt", "a");
     fprintf(fp, "Real time: %lf s\nCpu user time: %Lf s\nCpu system time: %Lf s\n",dur,(long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK),(long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
     fclose(fp);
+
+    int i=0;
 #if CONSOLE > 0
     while (exitCode == -1) {
         printf("\n> ");
