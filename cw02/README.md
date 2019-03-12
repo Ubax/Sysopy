@@ -9,13 +9,16 @@ perror, errno
 * Celem zadania jest napisanie programu porównującego wydajność systemowych i bibliotecznych funkcji wejścia/wyjścia. 
 Program operował będzie na przechowywanej w pliku tablicy rekordów. Dla uproszczenia pojedynczy rekord będzie tablicą bajtów o stałej wielkości. 
 Nazwa pliku, wielkość oraz liczba rekordów stanowić będą argumenty wywołania programu.
+
 Program udostępniać powinien operacje:
     * generate - tworzenie pliku z rekordami wypełnionego wygenerowaną losową zawartością (można wykorzystać wirtualny generator /dev/random lub w wersji uproszczonej funkcję rand)
     * sort - sortuje rekordy w pliku używając sortowania przez proste wybieranie. Kluczem do sortowania niech będzie wartość pierwszego bajtu rekordu (interpretowanego jako liczba bez znaku - unsigned char) Podczas sortowania w pamięci powinny być przechowywane jednocześnie najwyżej dwa rekordy (sprowadza się do zamieniania miejscami i porównywania dwóch rekordów).
     * copy - kopiuje plik1 do pliku2. Kopiowanie powinno odbywać się za pomocą bufora o zadanej wielkości rekordu.
+    
 Sortowanie i kopiowanie powinno być zaimplementowane w dwóch wariantach:
     * sys - przy użyciu funkcji systemowych: read i write
     * lib - przy użyciu funkcji biblioteki C: fread i fwrite
+    
 Rodzaj operacji oraz sposób dostępu do plików ma być wybierany na podstawie argumentu wywołania - np.:
     * ./program generate dane 100 512 powinno losowo generować 100 rekordów o długości 512 bajtów
    do pliku dane,
