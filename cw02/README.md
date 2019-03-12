@@ -10,16 +10,16 @@ perror, errno
 Program operował będzie na przechowywanej w pliku tablicy rekordów. Dla uproszczenia pojedynczy rekord będzie tablicą bajtów o stałej wielkości. 
 Nazwa pliku, wielkość oraz liczba rekordów stanowić będą argumenty wywołania programu.
 Program udostępniać powinien operacje:
-** generate - tworzenie pliku z rekordami wypełnionego wygenerowaną losową zawartością (można wykorzystać wirtualny generator /dev/random lub w wersji uproszczonej funkcję rand)
-** sort - sortuje rekordy w pliku używając sortowania przez proste wybieranie. Kluczem do sortowania niech będzie wartość pierwszego bajtu rekordu (interpretowanego jako liczba bez znaku - unsigned char) Podczas sortowania w pamięci powinny być przechowywane jednocześnie najwyżej dwa rekordy (sprowadza się do zamieniania miejscami i porównywania dwóch rekordów).
-** copy - kopiuje plik1 do pliku2. Kopiowanie powinno odbywać się za pomocą bufora o zadanej wielkości rekordu.
+    * generate - tworzenie pliku z rekordami wypełnionego wygenerowaną losową zawartością (można wykorzystać wirtualny generator /dev/random lub w wersji uproszczonej funkcję rand)
+    * sort - sortuje rekordy w pliku używając sortowania przez proste wybieranie. Kluczem do sortowania niech będzie wartość pierwszego bajtu rekordu (interpretowanego jako liczba bez znaku - unsigned char) Podczas sortowania w pamięci powinny być przechowywane jednocześnie najwyżej dwa rekordy (sprowadza się do zamieniania miejscami i porównywania dwóch rekordów).
+    * copy - kopiuje plik1 do pliku2. Kopiowanie powinno odbywać się za pomocą bufora o zadanej wielkości rekordu.
 Sortowanie i kopiowanie powinno być zaimplementowane w dwóch wariantach:
-** sys - przy użyciu funkcji systemowych: read i write
-** lib - przy użyciu funkcji biblioteki C: fread i fwrite
+    * sys - przy użyciu funkcji systemowych: read i write
+    * lib - przy użyciu funkcji biblioteki C: fread i fwrite
 Rodzaj operacji oraz sposób dostępu do plików ma być wybierany na podstawie argumentu wywołania - np.:
-*** ./program generate dane 100 512 powinno losowo generować 100 rekordów o długości 512 bajtów
+    * ./program generate dane 100 512 powinno losowo generować 100 rekordów o długości 512 bajtów
    do pliku dane,
-*** ./program sort dane 100 512 sys powinien sortować rekordy w pliku dane przy użyciu funkcji systemowych, 
+    * ./program sort dane 100 512 sys powinien sortować rekordy w pliku dane przy użyciu funkcji systemowych, 
     zakładając że zawiera on 100 rekordów wielkości 512 bajtów
-*** ./program copy plik1 plik2 100 512 lib powinno skopiować 100 rekordów pliku 1 do pliku 2 za pomocą funkcji 
+    * ./program copy plik1 plik2 100 512 lib powinno skopiować 100 rekordów pliku 1 do pliku 2 za pomocą funkcji 
     bibliotecznych z wykorzystaniem bufora 512 bajtów
