@@ -1,0 +1,115 @@
+------------ OPTIMIZATION O0 -------------
+---- DYNAMIC SMALL ----
+Real time: 0.006132 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC MEDIUM ----
+Real time: 0.099336 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC BIG ----
+Real time: 1.029322 s
+Cpu user time: 0.020000 s
+Cpu system time: 0.000000 s
+---- SHARED SMALL ----
+Real time: 0.006579 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED MEDIUM ----
+Real time: 0.094142 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED BIG ----
+Real time: 0.995281 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+---- STATIC SMALL ----
+Real time: 0.005882 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC MEDIUM ----
+Real time: 0.101659 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC BIG ----
+Real time: 1.000322 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+
+------------ OPTIMIZATION O3 -------------
+---- DYNAMIC SMALL ----
+Real time: 0.006866 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC MEDIUM ----
+Real time: 0.097215 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC BIG ----
+Real time: 1.022975 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+---- SHARED SMALL ----
+Real time: 0.006370 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED MEDIUM ----
+Real time: 0.093310 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED BIG ----
+Real time: 1.000205 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+---- STATIC SMALL ----
+Real time: 0.004180 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC MEDIUM ----
+Real time: 0.101000 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC BIG ----
+Real time: 0.980631 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+
+------------ OPTIMIZATION Os -------------
+---- DYNAMIC SMALL ----
+Real time: 0.021115 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC MEDIUM ----
+Real time: 0.094075 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- DYNAMIC BIG ----
+Real time: 1.035771 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+---- SHARED SMALL ----
+Real time: 0.019882 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED MEDIUM ----
+Real time: 0.093307 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- SHARED BIG ----
+Real time: 1.232614 s
+Cpu user time: 0.020000 s
+Cpu system time: 0.000000 s
+---- STATIC SMALL ----
+Real time: 0.006069 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC MEDIUM ----
+Real time: 0.137207 s
+Cpu user time: 0.000000 s
+Cpu system time: 0.000000 s
+---- STATIC BIG ----
+Real time: 1.323194 s
+Cpu user time: 0.010000 s
+Cpu system time: 0.000000 s
+
+Analizując otrzymane wyniki zauważyłem, że czasy wykonań programów znacząca nie różnią się 
