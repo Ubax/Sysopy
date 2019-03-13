@@ -200,21 +200,44 @@ void displayError(char *prefix, enum ERRORS error) {
     }
 }
 
-int generate_preprepare(char *fileName, size_t numberOfRecords, size_t sizeOfBlock) {
-    enum ERRORS ret = generate(fileName, numberOfRecords, sizeOfBlock);
+int generate_preprepare(int argc, char **argv) {
+    if (argc < 5) {
+        printf("Generate expects at 3 arguments: [file name] [number of records] [size of block]\n");
+        return 1;
+    }
+    size_t numberOfRecords = (size_t) strtol(argv[3], NULL, 10);
+    size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
+    if (errno != 0) {
+        printf("Error while converting arguments\n");
+        return 1;
+    }
+    enum ERRORS ret = generate(argv[2], numberOfRecords, sizeOfBlock);
     displayError("generate", ret);
     if (ret == NO_ERROR)return 0;
     else return 1;
 }
 
-int sort_preprepare(char *fileName, size_t numberOfRecords, size_t sizeOfBlock, enum TYPE type) {
-    enum ERRORS ret = UNKNOWN_TYPE;
+int sort_preprepare(int argc, char **argv) {
+    if (argc < 6) {
+        printf("Generate expects 4 arguments: [file name] [number of records] [size of block] [type]\n");
+        return 1;
+    }
+    enum TYPE type = NO_TYPE;
+    if (strcmp(argv[5], "sys") == 0)type = SYS;
+    else if (strcmp(argv[5], "lib") == 0)type = LIB;
+    size_t numberOfRecords = (size_t) strtol(argv[3], NULL, 10);
+    size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
+    if (errno != 0) {
+        printf("Error while converting arguments\n");
+        return 1;
+    }
+    enum ERRORS ret;
     switch (type) {
         case LIB:
-            ret = sort_lib(fileName, numberOfRecords, sizeOfBlock);
+            ret = sort_lib(argv[2], numberOfRecords, sizeOfBlock);
             break;
         case SYS:
-            ret = sort_sys(fileName, numberOfRecords, sizeOfBlock);
+            ret = sort_sys(argv[2], numberOfRecords, sizeOfBlock);
             break;
         default:
             ret = UNKNOWN_TYPE;
@@ -225,15 +248,27 @@ int sort_preprepare(char *fileName, size_t numberOfRecords, size_t sizeOfBlock, 
     else return 1;
 }
 
-int
-copy_preprepare(char *sourceName, char *destinationName, size_t numberOfRecords, size_t sizeOfBlock, enum TYPE type) {
-    enum ERRORS ret = UNKNOWN_TYPE;
+int copy_preprepare(int argc, char **argv) {
+    if (argc < 7) {
+        printf("Generate expects 5 arguments: [source file name] [destination file name] [number of records] [size of block] [type]\n");
+        return 1;
+    }
+    enum TYPE type = NO_TYPE;
+    if (strcmp(argv[6], "sys") == 0)type = SYS;
+    else if (strcmp(argv[6], "lib") == 0)type = LIB;
+    size_t numberOfRecords = (size_t) strtol(argv[4], NULL, 10);
+    size_t sizeOfBlock = (size_t) strtol(argv[5], NULL, 10);
+    if (errno != 0) {
+        printf("Error while converting arguments\n");
+        return 1;
+    }
+    enum ERRORS ret;
     switch (type) {
         case SYS:
-            ret = copy_sys(sourceName, destinationName, numberOfRecords, sizeOfBlock);
+            ret = copy_sys(argv[2], argv[3], numberOfRecords, sizeOfBlock);
             break;
         case LIB:
-            ret = copy_lib(sourceName, destinationName, numberOfRecords, sizeOfBlock);
+            ret = copy_lib(argv[2], argv[3], numberOfRecords, sizeOfBlock);
             break;
         default:
             ret = UNKNOWN_TYPE;
@@ -245,36 +280,14 @@ copy_preprepare(char *sourceName, char *destinationName, size_t numberOfRecords,
 }
 
 int main(int argc, char **argv) {
-    if (argc < 5) {
-        printf("Program expects at least 4 arguments: [command] [file name] [number of blocks] [size of block]\n");
+    if (argc < 2) {
+        printf("Program expects at least 1 arguments: [command]\n");
         return 1;
     }
-    size_t numberOfRecord = (size_t) strtol(argv[3], NULL, 10);
-    size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
-    enum TYPE type = NO_TYPE;
-    if (errno != 0) {
-        printf("Error while converting arguments\n");
-        return 1;
-    }
-    if (strcmp(argv[1], "generate") == 0) {
-        return generate_preprepare(argv[2], numberOfRecord, sizeOfBlock);
-    } else if (strcmp(argv[1], "sort") == 0) {
-        if (argc < 6) {
-            printf("Too few arguments for sort\n");
-            return 1;
-        }
-        if (strcmp(argv[5], "sys") == 0)type = SYS;
-        else if (strcmp(argv[5], "lib") == 0)type = LIB;
-        return sort_preprepare(argv[2], numberOfRecord, sizeOfBlock, type);
-    } else if (strcmp(argv[2], "copy") == 0) {
-        if (argc < 7) {
-            printf("Too few arguments for copy\n");
-            return 1;
-        }
-        if (strcmp(argv[5], "sys") == 0)type = SYS;
-        else if (strcmp(argv[5], "lib") == 0)type = LIB;
-        return copy_preprepare(argv[2], numberOfRecord, sizeOfBlock, type);
-    }
+
+    if (strcmp(argv[1], "generate") == 0)return generate_preprepare(argc, argv);
+    else if (strcmp(argv[1], "sort") == 0)return sort_preprepare(argc, argv);
+    else if (strcmp(argv[2], "copy") == 0)return copy_preprepare(argc, argv);
     printf("Command %s not known\n", argv[1]);
     return 0;
 }
