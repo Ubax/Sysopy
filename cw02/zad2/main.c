@@ -1,125 +1,94 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <sys/times.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <dirent.h>
-#include <sys/stat.h>
+#include "dirReader.h"
 
-#define LOG 0
-#define HEADERS 0
-
-static inline void my_log(const char *msg, ...) {
-#if LOG > 0
-    va_list ap;
-    va_start(ap, msg);
-    vprintf(msg, ap);
-    va_end(ap);
-#endif
+enum TYPE getTypeFromString(char *type) {
+    if (type[0] == '<')return LATER;
+    else if (type[0] == '=')return EXACT;
+    else if (type[0] == '>')return EARLIER;
+    return NO_TYPE;
 }
 
-static inline void my_headers(const char *msg, ...) {
-#if HEADERS > 0
-    va_list ap;
-    va_start(ap, msg);
-    vprintf(msg, ap);
-    va_end(ap);
-#endif
-}
-
-enum ERRORS {
-    NO_ERROR = 0,
-    NO_DIRECTORY,
-    CLOSING_DIRECTORY,
-    READING_DIR,
-    FILE_INFO,
-};
-
-void displayError(char *prefix, enum ERRORS error) {
-    switch (error) {
-        case NO_ERROR:
-            break;
-        case NO_DIRECTORY:
-            printf("Error in %s: no directory\n", prefix);
-            break;
-        case CLOSING_DIRECTORY:
-            printf("Error in %s: closing directory\n", prefix);
-            break;
-        case READING_DIR:
-            printf("Error in %s: reading directory\n", prefix);
-            break;
-        case FILE_INFO:
-            printf("Error in %s: file info %i\n", prefix, errno);
-            break;
+int stringToTM(char *date, struct tm *dateTm) {
+    /**
+     * TIME FORMAT
+     * YYYY-MM-DD,HH:MM:SS
+     */
+    size_t i = 0;
+    int buf = 0;
+    for (; i < strlen(date); i++) {
+        if (date[i] == '-')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
     }
-}
+    if (buf < 1900 || buf > 2100) return 1;
 
-int comp(time_t time1, time_t time2, char *type) {
-    if (strcmp(type, ">") == 0)return time2 > time1;
-    if (strcmp(type, "=") == 0)return time2 == time1;
-    if (strcmp(type, "<") == 0)return time2 < time1;
+    dateTm->tm_year = buf - 1900;
+    buf = 0; i++;
+    for (; i < strlen(date); i++) {
+        if (date[i] == '-')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
+    }
+    if (buf < 1 || buf > 12) return 1;
+    dateTm->tm_mon = buf - 1;
+    buf = 0; i++;
+
+    for (; i < strlen(date); i++) {
+        if (date[i] == ',')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
+    }
+    if (buf < 1 || buf > 31) return 1;
+    dateTm->tm_mday = buf;
+    buf = 0; i++;
+
+    for (; i < strlen(date); i++) {
+        if (date[i] == ':')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
+    }
+    if (buf < 0 || buf > 23) return 1;
+    dateTm->tm_hour = buf;
+    buf = 0; i++;
+
+    for (; i < strlen(date); i++) {
+        if (date[i] == ':')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
+    }
+    if (buf < 0 || buf > 59) return 1;
+    dateTm->tm_min = buf;
+    buf = 0; i++;
+
+    for (; i < strlen(date); i++) {
+        if (date[i] == ':')break;
+        if (date[i] < '0' || date[i] > '9')return 1;
+        buf = buf * 10 + date[i] - '0';
+    }
+    if (buf < 0 || buf > 59) return 1;
+    dateTm->tm_sec = buf;
+    buf = 0; i++;
     return 0;
 }
 
-enum ERRORS ors(char *dir, char *type, char *date) {
-    my_headers("ORS\n");
-
-    if (dir[strlen(dir) - 1] != '/')strcat(dir, "/");
-
-    my_log("\tOpening directory...\n");
-    DIR *directory;
-    if ((directory = opendir(dir)) == NULL)return NO_DIRECTORY;
-
-    my_log("\tReading files...\n");
-    struct dirent *dirInfo;
-    struct stat fileInfo;
-    char dirName[4096];
-    while ((dirInfo = readdir(directory)) != NULL) {
-        if (strcmp(dirInfo->d_name, ".") == 0)continue;
-        else if (strcmp(dirInfo->d_name, "..") == 0)continue;
-
-        strcpy(dirName, dir);
-        strcat(dirName, dirInfo->d_name);
-        my_log("%s\n", dirName);
-        if (lstat(dirName, &fileInfo) == -1)return FILE_INFO;
-
-        if (S_ISDIR(fileInfo.st_mode) && !S_ISLNK(fileInfo.st_mode)) {
-            strcat(dirName, "/");
-            enum ERRORS error = ors(dirName, type, date);
-            if (error != NO_ERROR)return error;
-        } else {
-            if (comp(time(0) - 1000, fileInfo.st_mtim.tv_sec, type)) {
-                char date[256];
-                strftime(date, 255, "%F", localtime(&fileInfo.st_mtim.tv_sec));
-                printf("%s\t%s\n", dirInfo->d_name, date);
-            }
-        }
-    }
-
-    if (errno != 0)return READING_DIR;
-
-    my_log("\tClosing directory...\n");
-    if (closedir(directory) != 0)return CLOSING_DIRECTORY;
-    return NO_ERROR;
-}
-
-enum ERRORS n(char *dir, char *type, char *date) {
-    return NO_ERROR;
-}
-
-
 int ors_preprepare(char *dir, char *type, char *date) { // opendir, readdir, stat
-    enum ERRORS error = ors(dir, type, date);
+    struct tm dateTm;
+    if(stringToTM(date, &dateTm)!=0){
+        printf("Wrong date format\n");
+        return 1;
+    }
+    enum ERRORS error = ors(dir, getTypeFromString(type), dateTm);
     displayError("ORS", error);
     if (error != NO_ERROR)return 1;
     return 0;
 }
 
 int n_preprepaer(char *dir, char *type, char *date) { //nftw
-    enum ERRORS error = n(dir, type, date);
+    struct tm dateTm;
+    if(stringToTM(date, &dateTm)!=0){
+        printf("Wrong date format\n");
+        return 1;
+    }
+    enum ERRORS error = n(dir, getTypeFromString(type), dateTm);
     displayError("NFTW", error);
     if (error != NO_ERROR)return 1;
     return 0;
