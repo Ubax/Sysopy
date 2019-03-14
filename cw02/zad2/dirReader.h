@@ -82,7 +82,7 @@ void displayError(char *prefix, enum ERRORS error) {
 }
 
 int comp(time_t base, time_t time1, enum TYPE type) {
-    base += 60 * 60;
+    //base += 60 * 60;
     switch (type) {
         case EARLIER:
             return difftime(base, time1) < 0;

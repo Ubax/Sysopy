@@ -7,7 +7,29 @@ enum TYPE getTypeFromString(char *type) {
     return NO_TYPE;
 }
 
-int stringToTM(char *date, struct tm *dateTm) {
+enum TIME_ERRORS{
+    TIME_NO_ERROR=-1,
+    YEAR=0,
+    MONTH=1,
+    DAY=2,
+    HOUR=3,
+    MINUTE=4,
+    SECOND=5,
+    DECIMAL=6
+};
+
+
+const char * TIME_ERRORS_STRING[] = {
+        "YEAR",
+        "MONTH",
+        "DAY",
+        "HOUR",
+        "MINUTE",
+        "SECOND",
+        "DECIMAL"
+};
+
+enum TIME_ERRORS stringToTM(char *date, struct tm *dateTm) {
     /**
      * TIME FORMAT
      * YYYY-MM-DD,HH:MM:SS
@@ -16,64 +38,64 @@ int stringToTM(char *date, struct tm *dateTm) {
     int buf = 0;
     for (; i < strlen(date); i++) {
         if (date[i] == '-')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 1900 || buf > 2100) return 1;
+    if (buf < 1900 || buf > 2100) return YEAR;
 
     dateTm->tm_year = buf - 1900;
     buf = 0; i++;
     for (; i < strlen(date); i++) {
         if (date[i] == '-')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 1 || buf > 12) return 1;
+    if (buf < 1 || buf > 12) return MONTH;
     dateTm->tm_mon = buf - 1;
     buf = 0; i++;
 
     for (; i < strlen(date); i++) {
         if (date[i] == ',')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 1 || buf > 31) return 1;
+    if (buf < 1 || buf > 31) return DAY;
     dateTm->tm_mday = buf;
     buf = 0; i++;
 
     for (; i < strlen(date); i++) {
         if (date[i] == ':')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 0 || buf > 23) return 1;
+    if (buf < 0 || buf > 23) return HOUR;
     dateTm->tm_hour = buf;
     buf = 0; i++;
 
     for (; i < strlen(date); i++) {
         if (date[i] == ':')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 0 || buf > 59) return 1;
+    if (buf < 0 || buf > 59) return MINUTE;
     dateTm->tm_min = buf;
     buf = 0; i++;
 
     for (; i < strlen(date); i++) {
         if (date[i] == ':')break;
-        if (date[i] < '0' || date[i] > '9')return 1;
+        if (date[i] < '0' || date[i] > '9')return DECIMAL;
         buf = buf * 10 + date[i] - '0';
     }
-    if (buf < 0 || buf > 59) return 1;
+    if (buf < 0 || buf > 59) return SECOND;
     dateTm->tm_sec = buf;
-    buf = 0; i++;
-    return 0;
+    return TIME_NO_ERROR;
 }
 
 int ors_preprepare(char *dir, char *type, char *date) { // opendir, readdir, stat
     struct tm dateTm;
-    if(stringToTM(date, &dateTm)!=0){
-        printf("Wrong date format\n");
+    enum TIME_ERRORS err;
+    if((err=stringToTM(date, &dateTm))!=TIME_NO_ERROR){
+        printf("Wrong date format: %s\n", TIME_ERRORS_STRING[err]);
         return 1;
     }
 
@@ -86,10 +108,12 @@ int ors_preprepare(char *dir, char *type, char *date) { // opendir, readdir, sta
 
 int n_preprepaer(char *dir, char *type, char *date) { //nftw
     struct tm dateTm;
-    if(stringToTM(date, &dateTm)!=0){
-        printf("Wrong date format\n");
+    enum TIME_ERRORS err;
+    if((err=stringToTM(date, &dateTm))!=TIME_NO_ERROR){
+        printf("Wrong date format: %s\n", TIME_ERRORS_STRING[err]);
         return 1;
     }
+
     enum ERRORS error = n(realpath(dir, NULL), getTypeFromString(type), dateTm);
     displayError("NFTW", error);
     if (error != NO_ERROR)return 1;
