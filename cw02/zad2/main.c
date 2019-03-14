@@ -76,7 +76,9 @@ int ors_preprepare(char *dir, char *type, char *date) { // opendir, readdir, sta
         printf("Wrong date format\n");
         return 1;
     }
-    enum ERRORS error = ors(dir, getTypeFromString(type), dateTm);
+
+    printf("File Name\t\t\tModification Date\tAccess Date\t\tType\tSize\n");
+    enum ERRORS error = ors(realpath(dir, NULL), getTypeFromString(type), dateTm);
     displayError("ORS", error);
     if (error != NO_ERROR)return 1;
     return 0;

@@ -8,9 +8,13 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <pwd.h>
+#define _XOPEN_SOURCE 500
+#include <ftw.h>
 
 #ifndef SYSOPY_DIRREADER_H
 #define SYSOPY_DIRREADER_H
+
 
 enum ERRORS {
     NO_ERROR = 0,
@@ -20,7 +24,7 @@ enum ERRORS {
     FILE_INFO,
 };
 
-enum TYPE{
+enum TYPE {
     NO_TYPE,
     EARLIER,
     EXACT,
@@ -48,8 +52,13 @@ static inline void my_headers(const char *msg, ...) {
 #endif
 }
 
-enum ERRORS ors_analyze_files(DIR* dir, enum TYPE type, char* dirName, struct tm date);
+struct tm gtm;
+enum TYPE gtype;
+
+enum ERRORS ors_analyze_files(DIR *dir, enum TYPE type, char *dirName, struct tm date);
+
 enum ERRORS ors(char *dir, enum TYPE type, struct tm date);
+
 enum ERRORS n(char *dir, enum TYPE type, struct tm date);
 
 void displayError(char *prefix, enum ERRORS error) {
@@ -72,7 +81,8 @@ void displayError(char *prefix, enum ERRORS error) {
 }
 
 int comp(time_t base, time_t time1, enum TYPE type) {
-    switch (type){
+    base += 60 * 60;
+    switch (type) {
         case EARLIER:
             return difftime(base, time1) < 0;
         case EXACT:
@@ -85,22 +95,35 @@ int comp(time_t base, time_t time1, enum TYPE type) {
     return 0;
 }
 
-int shouldAvoidDir(char * dirName){
+int shouldAvoidDir(char *dirName) {
     if (strcmp(dirName, ".") == 0)return 1;
     else if (strcmp(dirName, "..") == 0)return 1;
     return 0;
 }
 
-enum ERRORS ors_show_file(struct dirent *dirInfo, struct stat fileInfo, enum TYPE type, struct tm date){
+enum ERRORS ors_display(char *fullDir, struct stat fileInfo, enum TYPE type, struct tm date) {
+    //File Name			Mod Date	Acc Date	Type	Size
     if (comp(mktime(&date), fileInfo.st_mtime, type)) {
-        char fileDate[256];
-        strftime(fileDate, 255, "%F,%T", localtime(&fileInfo.st_mtime));
-        printf("%s\t%s\n", dirInfo->d_name, fileDate);
+        char modDate[256];
+        strftime(modDate, 255, "%F,%T", localtime(&fileInfo.st_mtime));
+        char accDate[256];
+        strftime(accDate, 255, "%F,%T", localtime(&fileInfo.st_atime));
+
+        char *fType = "unknown";
+        if (S_ISREG(fileInfo.st_mode))fType = "file";
+        else if (S_ISDIR(fileInfo.st_mode))fType = "dir";
+        else if (S_ISCHR(fileInfo.st_mode))fType = "char dev";
+        else if (S_ISBLK(fileInfo.st_mode))fType = "block dev";
+        else if (S_ISFIFO(fileInfo.st_mode))fType = "fifo";
+        else if (S_ISLNK(fileInfo.st_mode))fType = "slink";
+        else if (S_ISSOCK(fileInfo.st_mode))fType = "sock";
+
+        printf("%s\t%s\t%s\t%i\t%s\n", fullDir, modDate, accDate, (int) fileInfo.st_size, fType);
     }
     return NO_ERROR;
 }
 
-enum ERRORS ors_analyze_files(DIR* dir, enum TYPE type, char* dirName, struct tm date){
+enum ERRORS ors_analyze_files(DIR *dir, enum TYPE type, char *dirName, struct tm date) {
     my_log("\tReading files...\n");
     struct dirent *dirInfo;
     struct stat fileInfo;
@@ -119,7 +142,7 @@ enum ERRORS ors_analyze_files(DIR* dir, enum TYPE type, char* dirName, struct tm
             enum ERRORS error = ors(newDirName, type, date);
             if (error != NO_ERROR)return error;
         } else {
-            enum ERRORS error = ors_show_file(dirInfo, fileInfo, type, date);
+            enum ERRORS error = ors_display(newDirName, fileInfo, type, date);
             if (error != NO_ERROR)return error;
         }
     }
@@ -137,7 +160,7 @@ enum ERRORS ors(char *dir, enum TYPE type, struct tm date) {
 
 
     enum ERRORS error = ors_analyze_files(directory, type, dir, date);
-    if(error!=NO_ERROR)return error;
+    if (error != NO_ERROR)return error;
 
     if (errno != 0)return READING_DIR;
 
@@ -146,7 +169,29 @@ enum ERRORS ors(char *dir, enum TYPE type, struct tm date) {
     return NO_ERROR;
 }
 
+int nftw_display(char *fullDir, struct stat *fileInfo, int fd, struct FTW *flags) {
+    //File Name			Mod Date	Acc Date	Type	Size
+    if (comp(mktime(&gtm), fileInfo->st_mtime, gtype)) {
+        char modDate[256];
+        strftime(modDate, 255, "%F,%T", localtime(&fileInfo->st_mtime));
+        char accDate[256];
+        strftime(accDate, 255, "%F,%T", localtime(&fileInfo->st_atime));
+
+        char *fType = "unknown";
+        if (S_ISREG(fileInfo->st_mode))fType = "file";
+        else if (S_ISDIR(fileInfo->st_mode))fType = "dir";
+        else if (S_ISCHR(fileInfo->st_mode))fType = "char dev";
+        else if (S_ISBLK(fileInfo->st_mode))fType = "block dev";
+        else if (S_ISFIFO(fileInfo->st_mode))fType = "fifo";
+        else if (S_ISLNK(fileInfo->st_mode))fType = "slink";
+        else if (S_ISSOCK(fileInfo->st_mode))fType = "sock";
+
+        printf("%s\t%s\t%s\t%i\t%s\n", fullDir, modDate, accDate, (int) fileInfo.st_size, fType);
+    }
+}
+
 enum ERRORS n(char *dir, enum TYPE type, struct tm date) {
+    nftw(dir, nftw_display, 10, FTW_PHYS);
     return NO_ERROR;
 }
 
