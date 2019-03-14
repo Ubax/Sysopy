@@ -90,7 +90,7 @@ int n_preprepaer(char *dir, char *type, char *date) { //nftw
         printf("Wrong date format\n");
         return 1;
     }
-    enum ERRORS error = n(dir, getTypeFromString(type), dateTm);
+    enum ERRORS error = n(realpath(dir, NULL), getTypeFromString(type), dateTm);
     displayError("NFTW", error);
     if (error != NO_ERROR)return 1;
     return 0;
@@ -107,6 +107,8 @@ int main(int argc, char **argv) {
     }
 
     if (ors_preprepare(argv[1], argv[2], argv[3]) != 0)return 1;
+
+    printf("\n\n\n");
 
     if (n_preprepaer(argv[1], argv[2], argv[3]) != 0)return 1;
     return 0;

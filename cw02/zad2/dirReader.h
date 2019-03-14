@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -9,8 +10,8 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <pwd.h>
-#define _XOPEN_SOURCE 500
 #include <ftw.h>
+
 
 #ifndef SYSOPY_DIRREADER_H
 #define SYSOPY_DIRREADER_H
@@ -137,12 +138,12 @@ enum ERRORS ors_analyze_files(DIR *dir, enum TYPE type, char *dirName, struct tm
 
         if (lstat(newDirName, &fileInfo) == -1)return FILE_INFO;
 
+        enum ERRORS error = ors_display(newDirName, fileInfo, type, date);
+        if (error != NO_ERROR)return error;
+
         if (S_ISDIR(fileInfo.st_mode) && !S_ISLNK(fileInfo.st_mode)) {
             strcat(newDirName, "/");
             enum ERRORS error = ors(newDirName, type, date);
-            if (error != NO_ERROR)return error;
-        } else {
-            enum ERRORS error = ors_display(newDirName, fileInfo, type, date);
             if (error != NO_ERROR)return error;
         }
     }
@@ -169,7 +170,7 @@ enum ERRORS ors(char *dir, enum TYPE type, struct tm date) {
     return NO_ERROR;
 }
 
-int nftw_display(char *fullDir, struct stat *fileInfo, int fd, struct FTW *flags) {
+int nftw_display(const char *fullDir, const struct stat *fileInfo, int fd, struct FTW *flags) {
     //File Name			Mod Date	Acc Date	Type	Size
     if (comp(mktime(&gtm), fileInfo->st_mtime, gtype)) {
         char modDate[256];
@@ -186,11 +187,14 @@ int nftw_display(char *fullDir, struct stat *fileInfo, int fd, struct FTW *flags
         else if (S_ISLNK(fileInfo->st_mode))fType = "slink";
         else if (S_ISSOCK(fileInfo->st_mode))fType = "sock";
 
-        printf("%s\t%s\t%s\t%i\t%s\n", fullDir, modDate, accDate, (int) fileInfo.st_size, fType);
+        printf("%s\t%s\t%s\t%i\t%s\n", fullDir, modDate, accDate, (int) fileInfo->st_size, fType);
     }
+    return 0;
 }
 
 enum ERRORS n(char *dir, enum TYPE type, struct tm date) {
+    gtype=type;
+    gtm=date;
     nftw(dir, nftw_display, 10, FTW_PHYS);
     return NO_ERROR;
 }
