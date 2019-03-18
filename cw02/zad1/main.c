@@ -331,6 +331,10 @@ int generate_preprepare(int argc, char **argv) {
         printf("Error while converting arguments\n");
         return 1;
     }
+    if(numberOfRecords<=0 || sizeOfBlock <= 0){
+        printf("Number of records and size of block should be positive\n");
+        return 1;
+    }
     enum ERRORS ret = generate(argv[2], numberOfRecords, sizeOfBlock);
     displayError("generate", ret);
     if (ret == NO_ERROR)return 0;
@@ -349,6 +353,10 @@ int sort_preprepare(int argc, char **argv) {
     size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
     if (errno != 0) {
         printf("Error while converting arguments\n");
+        return 1;
+    }
+    if(numberOfRecords<=0 || sizeOfBlock <= 0){
+        printf("Number of records and size of block should be positive\n");
         return 1;
     }
     enum ERRORS ret;
@@ -380,6 +388,10 @@ int copy_preprepare(int argc, char **argv) {
     size_t sizeOfBlock = (size_t) strtol(argv[5], NULL, 10);
     if (errno != 0) {
         printf("Error while converting arguments\n");
+        return 1;
+    }
+    if(numberOfRecords<=0 || sizeOfBlock <= 0){
+        printf("Number of records and size of block should be positive\n");
         return 1;
     }
     enum ERRORS ret;
