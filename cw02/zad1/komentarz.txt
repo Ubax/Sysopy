@@ -1,0 +1,2 @@
+Dla malych rozmiarow rekordow funkcje biblioteczne sa duzo szybsze. Wynika to z optymalizacji ktore sa w nich zaszyte.
+Wzraz ze wzrostem rozmiaru bloku (4096, 8192) funkcje systemowe staja sie szybsze.

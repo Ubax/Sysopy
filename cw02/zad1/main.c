@@ -407,13 +407,10 @@ int main(int argc, char **argv) {
 
     int ret = 0;
 
-    struct timespec start, stop;
-    double dur;
+    static struct tms st_cpu;
+    static struct tms en_cpu;
 
-    if (clock_gettime(CLOCK_REALTIME, &start) == -1) {
-        printf("Problem with clock\n");
-        return 1;
-    }
+    times(&st_cpu);
 
     if (strcmp(argv[1], "generate") == 0)ret = generate_preprepare(argc, argv);
     else if (strcmp(argv[1], "sort") == 0)ret = sort_preprepare(argc, argv);
@@ -423,12 +420,8 @@ int main(int argc, char **argv) {
         ret = 1;
     }
 
-    if (clock_gettime(CLOCK_REALTIME, &stop) == -1) {
-        printf("Problem with clock\n");
-        return 1;
-    }
-    dur = stop.tv_sec - start.tv_sec + (stop.tv_nsec - start.tv_nsec) * 1.0 / 1000000000;
-
-    printf("%lf s\n", dur);
+    times(&en_cpu);
+    printf("%LF s\t", (long double)(en_cpu.tms_utime - st_cpu.tms_utime)/sysconf(_SC_CLK_TCK));
+    printf("%Lf s\n", (long double)(en_cpu.tms_stime - st_cpu.tms_stime)/sysconf(_SC_CLK_TCK));
     return ret;
 }
