@@ -12,7 +12,7 @@
 
 #define SINGLE_LINE_BUFOR_SIZE 256
 #define DATE_FORMAT "_%F_%H-%M-%S"
-#define LOG 0
+#define LOG 1
 #define HEADERS 0
 
 static inline void my_log(const char *msg, ...) {
@@ -65,6 +65,31 @@ size_t getNumberOfLines(char *fileName) {
     return numberOfLines;
 }
 
+struct FILE_RECORD getFileRecord(char * line){
+    size_t i=0;
+    int deli=0;
+    for(;i<strlen(line);i++){
+        if(line[i]==';'){
+            deli=1;
+            break;
+        }
+    }
+    if(deli==0){
+        printf("No delimeter [;]\n");
+        exit(1);
+    }
+    struct FILE_RECORD fr;
+    char *dir = strtok(line, ";");
+    char *seconds = strtok(NULL, ";");
+    strcpy(fr.dir, dir);
+    fr.seconds = (int) strtol(seconds, NULL, 10);
+    if (fr.seconds <= 0) {
+        printf("getFilesToWatchFromFile: Time should be positive\n");
+        exit(1);
+    }
+    return fr;
+}
+
 struct FILES_ARRAY getFilesToWatchFromFile(char *fileName) {
     FILE *file = fopen(fileName, "r");
     if (file == NULL) {
@@ -78,15 +103,7 @@ struct FILES_ARRAY getFilesToWatchFromFile(char *fileName) {
     size_t size = 0;
     int i = 0;
     while (getline(&line, &size, file) != -1) {
-        char *dir = strtok(line, ";");
-        char *seconds = strtok(NULL, ";");
-        strcpy(files_array.files[i].dir, dir);
-        files_array.files[i].seconds = (int) strtol(seconds, NULL, 10);
-        if (files_array.files[i].seconds <= 0) {
-            printf("getFilesToWatchFromFile: Time should be positive\n");
-            exit(1);
-        }
-
+        files_array.files[i] = getFileRecord(line);
         i++;
         free(line);
     }
@@ -195,7 +212,7 @@ int monitor(char *fileName, time_t duration, time_t maxTime, enum COPY_TYPE type
 
 int main(int argc, char **argv) {
     if (argc < 4) {
-        printf("Program expects at 1 argument: [file name] [watch time] [type]\n");
+        printf("Program expects at last 3 argument: [file name] [watch time] [type]\n");
         return 1;
     }
     enum COPY_TYPE type;
@@ -223,6 +240,7 @@ int main(int argc, char **argv) {
         printf("Time should be positive\n");
         exit(1);
     }
+    my_log("Analyzing file\n");
 
     struct FILES_ARRAY files_array = getFilesToWatchFromFile(argv[1]);
 
