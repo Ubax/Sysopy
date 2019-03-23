@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    rlim_t memoryLimit = (rlim_t) strtol(argv[4], NULL, 10);
+    rlim_t memoryLimit = (rlim_t) strtol(argv[5], NULL, 10);
     if (memoryLimit <= 0) {
         printf("Memory limit should be positive\n");
         exit(1);
