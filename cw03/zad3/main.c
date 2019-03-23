@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <libgen.h>
 #include <errno.h>
+#include <sys/resource.h>
 
 #define SINGLE_LINE_BUFOR_SIZE 256
 #define DATE_FORMAT "_%F_%H-%M-%S"
@@ -46,14 +47,6 @@ struct FILES_ARRAY {
 struct MONITOR_RESULT {
     pid_t pid;
     int numberOfModifications;
-};
-
-struct FILE_IN_MEMORY {
-    char *data;
-    size_t size;
-
-    char fileName[PATH_MAX];
-    struct timespec modDate;
 };
 
 enum COPY_TYPE {
@@ -118,81 +111,63 @@ struct FILES_ARRAY getFilesToWatchFromFile(char *fileName) {
     return files_array;
 }
 
-struct FILE_IN_MEMORY copyToMemory(char *fileName, struct timespec modificationTime) {
+int copyUsingMemory(char *fileName, struct timespec modificationTime) {
     my_log("\tOpening source file %s...\n", fileName);
     FILE *src = fopen(fileName, "r");
     if (src == NULL) {
-        printf("copyToMemory: No file: %s\n", basename(fileName));
+        printf("copyUsingMemory: No file: %s\n", basename(fileName));
         exit(-1);
     }
     if (fseek(src, 0, SEEK_END) != 0) {
-        printf("copyToMemory: file seek\n");
+        printf("copyUsingMemory: file seek\n");
         exit(-1);
     }
     size_t size = ftell(src);
     if (fseek(src, 0, SEEK_SET) != 0) {
-        printf("copyToMemory: file seek\n");
+        printf("copyUsingMemory: file seek\n");
         exit(-1);
     }
-    my_log("\tAllocating memory %s...\n", fileName);
-    char * data = malloc(size * sizeof(char));
-    if (data == NULL) {
-        printf("copyToMemory: Couldn't allocate memory\n");
-        exit(1);
-    }
-    fread(data, sizeof(char), size, src);
-    fclose(src);
 
-    struct FILE_IN_MEMORY fileInMemory;
-    strcpy(fileInMemory.fileName,fileName);
-    fileInMemory.modDate=modificationTime;
-    fileInMemory.data=data;
-    fileInMemory.size=size;
-
-    return fileInMemory;
-}
-
-void pasteToArchive(struct FILE_IN_MEMORY * file) {
-    if(file->data==NULL) {
-        printf("pasteToArchive: Data is null\n");
-        exit(1);
-    }
     char destinationName[PATH_MAX];
     char date[30];
-    strftime(date, 29, DATE_FORMAT, localtime(&file->modDate.tv_sec));
+    strftime(date, 29, DATE_FORMAT, localtime(&modificationTime.tv_sec));
     strcpy(destinationName, "archiwum/");
-    strcat(destinationName, basename(file->fileName));
+    strcat(destinationName, basename(fileName));
     strcat(destinationName, date);
 
     my_log("\tOpening destination file %s...\n", destinationName);
     FILE *dest = fopen(destinationName, "w");
     if (dest == NULL) {
-        printf("copyToMemory: Cannot create file: %s\n", destinationName);
+        printf("copyUsingMemory: Cannot create file: %s\n", destinationName);
         exit(-1);
     }
-    my_log("\tWriting...\n");
-    fwrite(file->data, sizeof(char), file->size, dest);
+
+    my_log("\tCreating block...\n");
+    char *block = malloc(size * sizeof(char));
+
+    my_log("\tCopying block by block...\n");
+    fread(block, sizeof(char), size, src);
+    fwrite(block, sizeof(char), size, dest);
 
 
     my_log("\tClosing files...\n");
+    fclose(src);
     fclose(dest);
 
     my_log("\tFreeing memory...\n");
-    free(file->data);
-    file->data=NULL;
-    my_headers("File modified: %s\nSaved to: %s\n", file->fileName, destinationName);
+    free(block);
+    return 0;
 }
 
 int copyUsingCp(char *fileName, struct timespec modificationTime) {
     pid_t pid = fork();
     if (pid == 0) {
         char destinationName[PATH_MAX];
-        char date[30];
-        strftime(date, 29, DATE_FORMAT, localtime(&modificationTime.tv_sec));
+        char date[20];
+        strftime(date, 19, DATE_FORMAT, localtime(&modificationTime.tv_sec));
         strcpy(destinationName, "archiwum/");
         strcat(destinationName, basename(fileName));
         strcat(destinationName, date);
-        my_headers("File modified: %s\nSaved to: %s\n", fileName, destinationName);
         execlp("cp", "cp", fileName, destinationName, NULL);
     } else {
         int res;
@@ -206,47 +181,38 @@ int monitor(char *fileName, time_t duration, time_t maxTime, enum COPY_TYPE type
     time(&startTime);
     time_t currentTime;
     time(&currentTime);
-    time_t check_begin = 0;
     time_t lastCheck = 0;
     int modifications = 0;
-    struct FILE_IN_MEMORY fileInMemory;
-    fileInMemory.data=NULL;
-    fileInMemory.modDate.tv_sec=2;
     while (difftime(currentTime, startTime) < maxTime) {
-        time(&check_begin);
-        struct stat fileInfo;
-        if (lstat(fileName, &fileInfo) == -1) {
-            perror(fileName);
-            exit(-1);
-        }
-        my_headers("Checking file: %s\n", fileName);
-        switch (type) {
-            case CP:
-                if (difftime(lastCheck, fileInfo.st_mtim.tv_sec) < 0) {
-                    modifications++;
-                    copyUsingCp(fileName, fileInfo.st_mtim);
+        if (difftime(currentTime, lastCheck) > duration) {
+            struct stat fileInfo;
+            if (lstat(fileName, &fileInfo) == -1) {
+                perror(fileName);
+                exit(-1);
+            }
+
+            if (difftime(lastCheck, fileInfo.st_mtim.tv_sec) < 0) {
+                my_headers("File modified: %s\n", fileName);
+                switch (type) {
+                    case CP:
+                        copyUsingCp(fileName, fileInfo.st_mtim);
+                        break;
+                    case MEM:
+                        copyUsingMemory(fileName, fileInfo.st_mtim);
+                        break;
                 }
-                break;
-            case MEM:
-                if (difftime(fileInfo.st_mtim.tv_sec, fileInMemory.modDate.tv_sec) > 0) {
-                    modifications++;
-                    my_headers("File modified: %s\n", fileName);
-                    if(fileInMemory.data!=NULL)pasteToArchive(&fileInMemory);
-                    fileInMemory=copyToMemory(fileName, fileInfo.st_mtim);
-                }
-                break;
+                modifications++;
+            }
+            time(&lastCheck);
         }
-        time(&currentTime);
-        time(&lastCheck);
-        sleep((unsigned)(duration-difftime(currentTime, check_begin)));
         time(&currentTime);
     }
     return modifications;
 }
 
 int main(int argc, char **argv) {
-    if (argc < 4) {
-        printf("Program expects at last 3 argument: [file name] [watch time] [type]\n");
+    if (argc < 6) {
+        printf("Program expects at last 5 argument: [file name] [watch time] [type] [cpu time limit] [memory limit]\n");
         return 1;
     }
     enum COPY_TYPE type;
@@ -274,6 +240,27 @@ int main(int argc, char **argv) {
         printf("Time should be positive\n");
         exit(1);
     }
+
+    rlim_t cpuTimeLimit = (rlim_t) strtol(argv[4], NULL, 10);
+    if (cpuTimeLimit <= 0) {
+        printf("CPU Time limit should be positive\n");
+        exit(1);
+    }
+
+    rlim_t memoryLimit = (rlim_t) strtol(argv[4], NULL, 10);
+    if (memoryLimit <= 0) {
+        printf("Memory limit should be positive\n");
+        exit(1);
+    }
+
+    struct rlimit cpuLimit;
+    cpuLimit.rlim_max = cpuTimeLimit;
+    cpuLimit.rlim_cur = cpuTimeLimit;
+    struct rlimit memLimit;
+    memLimit.rlim_max = memoryLimit * 1024 * 1024;
+    memLimit.rlim_cur = memoryLimit * 1024 * 1024;
+
+
     my_log("Analyzing file\n");
 
     struct FILES_ARRAY files_array = getFilesToWatchFromFile(argv[1]);
@@ -286,18 +273,32 @@ int main(int argc, char **argv) {
     for (; i < files_array.size; i++) {
         pid = fork();
         if (pid == 0) {
+            setrlimit(RLIMIT_AS, &memLimit);
+            setrlimit(RLIMIT_CPU, &cpuLimit);
+            if(errno){
+                perror("Setting limits");
+                exit(-2);
+            }
             return monitor(files_array.files[i].dir, files_array.files[i].seconds, time, type);
         }
     }
     i = 0;
+    struct rusage resourcesUsage[files_array.size];
     for (; i < files_array.size; i++) {
         results[i].pid = wait(&results[i].numberOfModifications);
         results[i].numberOfModifications = WEXITSTATUS(results[i].numberOfModifications);
     }
+    if (getrusage(RUSAGE_CHILDREN, resourcesUsage)) {
+        perror("getting usages");
+        return 1;
+    }
     i = 0;
     for (; i < files_array.size; i++) {
         if (results[i].numberOfModifications == -1)printf("PID: %i\tError\n", results[i].pid);
-        else printf("PID: %i\tModifications: %i\n", results[i].pid, results[i].numberOfModifications);
+        else {
+            printf("PID: %i\tModifications: %i\tUser time: %lu\tSystem time: %lu\n", results[i].pid,
+                   results[i].numberOfModifications, resourcesUsage[i].ru_utime.tv_sec, resourcesUsage[i].ru_utime.tv_sec);
+        }
     }
     return 0;
 }
