@@ -140,23 +140,30 @@ int main(int argc, char **argv) {
             return monitor(files_array.files[i].dir, files_array.files[i].seconds, time, type);
         }
     }
+
+
     i = 0;
-    struct rusage resourcesUsage[files_array.size];
     for (; i < files_array.size; i++) {
+        struct rusage resourcesUsageBeg;
+        struct rusage resourcesUsage;
+        if (getrusage(RUSAGE_CHILDREN, &resourcesUsageBeg)) {
+            perror("Resources before watch");
+            exit(1);
+        }
         results[i].pid = wait(&results[i].numberOfModifications);
         results[i].numberOfModifications = WEXITSTATUS(results[i].numberOfModifications);
-    }
-    if (getrusage(RUSAGE_CHILDREN, resourcesUsage)) {
-        perror("getting usages");
-        return 1;
-    }
-    i = 0;
-    for (; i < files_array.size; i++) {
+        if (getrusage(RUSAGE_CHILDREN, &resourcesUsage)) {
+            perror("Resources after watch");
+            exit(1);
+        }
         if (results[i].numberOfModifications == -1)printf("PID: %i\tError\n", results[i].pid);
         else {
-            printf("PID: %i\tModifications: %i\tUser time: %lu\tSystem time: %lu\n", results[i].pid,
-                   results[i].numberOfModifications, resourcesUsage[i].ru_utime.tv_sec,
-                   resourcesUsage[i].ru_utime.tv_sec);
+            printf("PID: %i\tModifications: %i\tUser time: %lu %ld\tSystem time: %lu %ld\n", results[i].pid,
+                   results[i].numberOfModifications,
+                   resourcesUsage.ru_utime.tv_sec-resourcesUsageBeg.ru_utime.tv_sec,
+                   resourcesUsage.ru_utime.tv_usec-resourcesUsageBeg.ru_utime.tv_usec,
+                   resourcesUsage.ru_stime.tv_sec-resourcesUsageBeg.ru_stime.tv_sec,
+                   resourcesUsage.ru_stime.tv_usec-resourcesUsageBeg.ru_stime.tv_usec);
         }
     }
     return 0;
