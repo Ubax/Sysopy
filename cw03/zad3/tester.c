@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     }
     char *line;
     while (1) {
-        unsigned secs = rand() % (pMin - pMax + 1) + pMin;
+        int secs = rand() % (pMax - pMin + 1) + pMin;
         sleep(secs);
 
         char pid_str[12];

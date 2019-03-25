@@ -100,7 +100,7 @@ int monitor(char *fileName, time_t duration, time_t maxTime, enum COPY_TYPE type
     time_t currentTime;
     time(&currentTime);
     time_t check_begin = 0;
-    time_t lastCheck = 0;
+    time_t lastArchive = 0;
     int modifications = 0;
     struct FILE_IN_MEMORY fileInMemory;
     fileInMemory.data = NULL;
@@ -115,9 +115,10 @@ int monitor(char *fileName, time_t duration, time_t maxTime, enum COPY_TYPE type
         my_headers("Checking file: %s\n", fileName);
         switch (type) {
             case CP:
-                if (difftime(lastCheck, fileInfo.st_mtim.tv_sec) < 0) {
+                if (difftime(lastArchive, fileInfo.st_mtim.tv_sec) < 0) {
                     modifications++;
                     copyUsingCp(fileName, fileInfo.st_mtim);
+                    time(&lastArchive);
                 }
                 break;
             case MEM:
@@ -130,7 +131,6 @@ int monitor(char *fileName, time_t duration, time_t maxTime, enum COPY_TYPE type
                 break;
         }
         time(&currentTime);
-        time(&lastCheck);
         sleep((unsigned) (duration - difftime(currentTime, check_begin)));
         time(&currentTime);
     }

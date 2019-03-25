@@ -73,7 +73,7 @@ enum ERRORS generate(char *fileName, size_t numberOfRecords, size_t sizeOfBlock)
             block[j] = (char) (rand() % 26 + 'A');
         }
         fwrite(block, sizeof(char), sizeOfBlock, file);
-        if (errno != 0) {
+        if (errno) {
             printf("Error occured while writing to file\n");
             return FILE_WRITING;
         }
@@ -154,14 +154,14 @@ enum ERRORS sort_sys(char *fileName, size_t numberOfRecords, size_t sizeOfBlock)
 
     my_log("\tOpening file %s...\n", fileName);
     int file = open(fileName, O_RDWR | O_CREAT);
-    if (errno != 0)return FILE_OPENING;
+    if (errno)return FILE_OPENING;
 
     my_log("\tChecking file size...\n");
     int size = (int) lseek(file, 0, SEEK_END);
-    if (errno != 0)return FILE_SEEK;
+    if (errno)return FILE_SEEK;
     if (size < numberOfRecords * sizeOfBlock) return FILE_SIZE;
     lseek(file, 0, SEEK_SET);
-    if (errno != 0)return FILE_SEEK;
+    if (errno)return FILE_SEEK;
 
     my_log("\tCreating blocks...\n");
     char *block1 = malloc(sizeof(char) * (sizeOfBlock + 1));
@@ -261,7 +261,7 @@ enum ERRORS copy_sys(char *sourceName, char *destinationName, size_t numberOfRec
     my_log("\tOpening source file %s...\n", sourceName);
 
     int src = open(sourceName, O_RDONLY);
-    if (errno != 0)return FILE_OPENING;
+    if (errno)return FILE_OPENING;
 
     int size;
     if ((size = (int)lseek(src, 0, SEEK_END)) == -1)return FILE_SEEK;
@@ -270,7 +270,7 @@ enum ERRORS copy_sys(char *sourceName, char *destinationName, size_t numberOfRec
 
     my_log("\tOpening destination file %s...\n", destinationName);
     int dest = open(destinationName, O_WRONLY | O_TRUNC);
-    if (errno != 0)return FILE_OPENING;
+    if (errno)return FILE_OPENING;
 
     my_log("\tCreating block...\n");
     char *block = malloc(sizeof(char) * (sizeOfBlock + 1));
@@ -327,7 +327,7 @@ int generate_preprepare(int argc, char **argv) {
     }
     size_t numberOfRecords = (size_t) strtol(argv[3], NULL, 10);
     size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
-    if (errno != 0) {
+    if (errno) {
         printf("Error while converting arguments\n");
         return 1;
     }
@@ -351,7 +351,7 @@ int sort_preprepare(int argc, char **argv) {
     else if (strcmp(argv[5], "lib") == 0)type = LIB;
     size_t numberOfRecords = (size_t) strtol(argv[3], NULL, 10);
     size_t sizeOfBlock = (size_t) strtol(argv[4], NULL, 10);
-    if (errno != 0) {
+    if (errno) {
         printf("Error while converting arguments\n");
         return 1;
     }
@@ -386,7 +386,7 @@ int copy_preprepare(int argc, char **argv) {
     else if (strcmp(argv[6], "lib") == 0)type = LIB;
     size_t numberOfRecords = (size_t) strtol(argv[4], NULL, 10);
     size_t sizeOfBlock = (size_t) strtol(argv[5], NULL, 10);
-    if (errno != 0) {
+    if (errno) {
         printf("Error while converting arguments\n");
         return 1;
     }

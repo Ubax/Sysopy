@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
         }
         if (results[i].numberOfModifications == -1)printf("PID: %i\tError\n", results[i].pid);
         else {
-            printf("PID: %i\tModifications: %i\tUser time: %lu %ld\tSystem time: %lu %ld\n", results[i].pid,
+            printf("PID: %i\tModifications: %i\tUser time: %lu.%08ld\tSystem time: %lu.%08ld\n", results[i].pid,
                    results[i].numberOfModifications,
                    resourcesUsage.ru_utime.tv_sec-resourcesUsageBeg.ru_utime.tv_sec,
                    resourcesUsage.ru_utime.tv_usec-resourcesUsageBeg.ru_utime.tv_usec,
