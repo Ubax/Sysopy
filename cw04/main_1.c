@@ -30,7 +30,7 @@ void signalTSTP(int signalno){
 }
 
 void signalINT(int signalno){
-    printf("CTRL+C\n");
+    printf("Odebrano sygnał SIGINT\n");
     exit(signalno);
 }
 
