@@ -52,7 +52,7 @@ struct FILE_IN_MEMORY {
 };
 
 
-int monitor(char *fileName, time_t duration, time_t maxTime);
+int monitor(char *fileName, time_t duration);
 struct FILE_IN_MEMORY copyToMemory(char *fileName, struct timespec modificationTime);
 void pasteToArchive(struct FILE_IN_MEMORY *file);
 

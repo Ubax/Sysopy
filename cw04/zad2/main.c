@@ -8,10 +8,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <ctype.h>
 #include "monitor.h"
 #include "fileAnalyzer.h"
 
-enum CMD{
+
+struct PID_FILE_RECORD {
+    char *fileName;
+    pid_t pid;
+};
+
+enum CMD {
     END,
     LIST,
     STOP_PID,
@@ -22,6 +29,10 @@ enum CMD{
 };
 
 enum CMD readCMD();
+
+void processCMD(enum CMD, struct PID_FILE_RECORD *, size_t);
+
+int cmdPID = 0;
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -47,22 +58,25 @@ int main(int argc, char **argv) {
 
     struct MONITOR_RESULT results[files_array.size];
 
-    pid_t pid[files_array.size];
+    struct PID_FILE_RECORD pid[files_array.size];
 
     size_t i = 0;
     for (; i < files_array.size; i++) {
-        pid[i] = fork();
-        if (pid[i] == 0) {
-            return monitor(files_array.files[i].dir, files_array.files[i].seconds, time, type);
+        pid[i].fileName = files_array.files[i].dir;
+        pid[i].pid = fork();
+        if (pid[i].pid == 0) {
+            return monitor(files_array.files[i].dir, files_array.files[i].seconds);
         }
     }
 
     enum CMD currentCMD = NONE;
-    while(currentCMD!=END){
+    while (currentCMD != END) {
         currentCMD = readCMD();
+        processCMD(currentCMD, pid, files_array.size);
     }
     i = 0;
     for (; i < files_array.size; i++) {
+        kill(pid[i].pid, SIGINT);
         results[i].pid = wait(&results[i].numberOfModifications);
         results[i].numberOfModifications = WEXITSTATUS(results[i].numberOfModifications);
     }
@@ -74,9 +88,102 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-enum CMD readCMD(){
+void toUpper(char *str) {
+    size_t i = 0;
+    for (; i < strlen(str); i++)str[i] = (char) toupper(str[i]);
+}
+
+void list(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
+    size_t i = 0;
+    printf("\n|---------|----------------------------|\n"
+           "|   PID   |          FILE NAME         |\n"
+           "|---------|----------------------------|\n");
+    for (; i < arraySize; i++)printf("| %7i | %26s |\n", pidArray[i].pid, pidArray[i].fileName);
+    printf("|---------|----------------------------|\n\n");
+}
+
+void stopPID(pid_t pid) {
+    if (kill(pid, SIGUSR1) != 0) {
+        printf("Couldn't send a signal\n");
+        perror("stop pid");
+        errno = 0;
+        return;
+    }
+    printf("Process %i stopped\n", pid);
+}
+
+void stopAll(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
+    size_t i = 0;
+    for (; i < arraySize; i++) {
+        stopPID(pidArray[i].pid);
+    }
+}
+
+void startPID(pid_t pid) {
+    if (kill(pid, SIGUSR2) != 0) {
+        printf("Couldn't send a signal\n");
+        perror("start pid");
+        errno = 0;
+        return;
+    }
+    printf("Process %i started\n", pid);
+}
+
+void startAll(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
+    size_t i = 0;
+    for (; i < arraySize; i++) {
+        startPID(pidArray[i].pid);
+    }
+}
+
+void processCMD(enum CMD cmd, struct PID_FILE_RECORD *pidArray, size_t arraySize) {
+    switch (cmd) {
+        case LIST:
+            list(pidArray, arraySize);
+            break;
+        case START_PID:
+            startPID(cmdPID);
+            break;
+        case STOP_PID:
+            stopPID(cmdPID);
+            break;
+        case START_ALL:
+            startAll(pidArray, arraySize);
+            break;
+        case STOP_ALL:
+            stopAll(pidArray, arraySize);
+            break;
+        case END:
+            break;
+        case NONE:
+            printf("Unknown command\n");
+            break;
+    }
+}
+
+enum CMD readCMD() {
     char buf[255];
     scanf("%s", buf);
-    if(strcmp(buf, "END")==0)return END;
+    toUpper(buf);
+    if (strcmp(buf, "END") == 0)return END;
+    if (strcmp(buf, "LIST") == 0)return LIST;
+    if (strcmp(buf, "START") == 0) {
+        scanf("%s", buf);
+        toUpper(buf);
+        if (strcmp(buf, "PID") == 0) {
+            scanf("%i", &cmdPID);
+            return START_PID;
+        }
+        if (strcmp(buf, "ALL") == 0)return START_ALL;
+    }
+    if (strcmp(buf, "STOP") == 0) {
+        scanf("%s", buf);
+        toUpper(buf);
+        if (strcmp(buf, "PID") == 0) {
+            scanf("%i", &cmdPID);
+            return STOP_PID;
+        }
+        if (strcmp(buf, "ALL") == 0)return STOP_ALL;
+    }
     return NONE;
 }

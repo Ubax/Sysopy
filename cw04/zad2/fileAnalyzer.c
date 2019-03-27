@@ -1,3 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <ctype.h>
+#include "fileAnalyzer.h"
+
 size_t getNumberOfLines(char *fileName) {
     FILE *file = fopen(fileName, "r");
     char *line = NULL;

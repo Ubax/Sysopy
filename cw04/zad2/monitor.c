@@ -11,6 +11,7 @@
 #include <sys/resource.h>
 #include "monitor.h"
 
+
 struct FILE_IN_MEMORY copyToMemory(char *fileName, struct timespec modificationTime) {
     my_log("\tOpening source file %s...\n", fileName);
     FILE *src = fopen(fileName, "r");
@@ -77,19 +78,28 @@ void pasteToArchive(struct FILE_IN_MEMORY *file) {
 }
 
 int modifications = 0;
+int working = 1;
 
-void signalINT(int signalno){
-    printf("Odebrano sygnał SIGINT\n");
+void signalINT(int signalno) {
     exit(modifications);
 }
 
-int monitor(char *fileName, time_t duration, time_t maxTime) {
+void signalStop(int signalno) {
+    working=0;
+    exit(modifications);
+}
+
+void signalStart(int signalno) {
+    working=1;
+    exit(modifications);
+}
+
+int monitor(char *fileName, time_t duration) {
     time_t startTime;
     time(&startTime);
     time_t currentTime;
     time(&currentTime);
     time_t check_begin = 0;
-    time_t lastArchive = 0;
 
     modifications = 0;
     signal(SIGINT, &signalINT);
@@ -98,31 +108,26 @@ int monitor(char *fileName, time_t duration, time_t maxTime) {
     fileInMemory.data = NULL;
     fileInMemory.modDate.tv_sec = 2;
     while (1) {
-        time(&check_begin);
-        struct stat fileInfo;
-        if (lstat(fileName, &fileInfo) == -1) {
-            perror(fileName);
-            exit(-1);
+        if(working){
+            time(&check_begin);
+            struct stat fileInfo;
+            if (lstat(fileName, &fileInfo) == -1) {
+                perror(fileName);
+                exit(-1);
+            }
+
+            if (difftime(fileInfo.st_mtim.tv_sec, fileInMemory.modDate.tv_sec) > 0) {
+                modifications++;
+                my_headers("File modified: %s\n", fileName);
+                if (fileInMemory.data != NULL)pasteToArchive(&fileInMemory);
+                fileInMemory = copyToMemory(fileName, fileInfo.st_mtim);
+            }
+
+            time(&currentTime);
+            sleep((unsigned) (duration - difftime(currentTime, check_begin)));
+        }else{
+            sleep(1);
         }
-        my_headers("Checking file: %s\n", fileName);
-        switch (type) {
-            case CP:
-                if (difftime(lastArchive, fileInfo.st_mtim.tv_sec) < 0) {
-                    modifications++;
-                    copyUsingCp(fileName, fileInfo.st_mtim);
-                    time(&lastArchive);
-                }
-                break;
-            case MEM:
-                if (difftime(fileInfo.st_mtim.tv_sec, fileInMemory.modDate.tv_sec) > 0) {
-                    modifications++;
-                    my_headers("File modified: %s\n", fileName);
-                    if (fileInMemory.data != NULL)pasteToArchive(&fileInMemory);
-                    fileInMemory = copyToMemory(fileName, fileInfo.st_mtim);
-                }
-                break;
-        }
-        time(&currentTime);
-        sleep((unsigned) (duration - difftime(currentTime, check_begin)));
+
     }
 }
