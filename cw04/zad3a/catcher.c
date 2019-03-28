@@ -12,13 +12,22 @@ int main(int argc, char **argv) {
     size_t i =0;
 
     for(;i<31;i++){
-        if(i!=SIGUSR1 && i!=SIGUSR2)signal(i, SIG_IGN);
+        if(i!=SIGUSR1 && i!=SIGUSR2)signal((int)i, SIG_IGN);
     }
     int numberOfSignals = receive();
     pid_t senderPID = getSenderPid();
     i=0;
     for(;i<numberOfSignals;i++){
-        kill(senderPID, SIGUSR1);
+        if(!isQueue())kill(senderPID, SIGUSR1);
+        else{
+            union sigval val;
+            val.sival_int=(int)i;
+            val.sival_ptr=NULL;
+            if(sigqueue(senderPID, SIGUSR1, val)!=0){
+                perror("sending usr1");
+                return 1;
+            }
+        }
     }
     kill(senderPID, SIGUSR2);
     printGoodbye(numberOfSignals);

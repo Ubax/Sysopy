@@ -26,9 +26,14 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    sender(catcherPID, type, numberOfSignals);
+    if(sender(catcherPID, type, numberOfSignals)){
+        perror("sender");
+        return 1;
+    }
     int numberOfReceivedSignals = receive();
+    int maxLast = getLastIntValue();
     printf("Received signals:\t%i\nSent signals:\t%ld\n", numberOfReceivedSignals, numberOfSignals);
+    if(type==SIGQUEUE)printf("Catcher max number:\t%i\n",maxLast);
 
     return 0;
 }

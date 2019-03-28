@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <errno.h>
+#include <stdio.h>
 #include "senderLib.h"
 #include "catcherLib.h"
 
@@ -33,12 +34,30 @@ int sendSigrt(pid_t pid, enum SIGNAL signalType) {
     return 0;
 }
 
+int sendQueue(pid_t pid, enum SIGNAL signalType) {
+    union sigval val;
+    printf("Send:%id\n", pid);
+    val.sival_int=pid;
+    val.sival_ptr=NULL;
+    switch (signalType) {
+        case SIG_SIGUSR1:
+            if(sigqueue(pid, SIGUSR1, val)!=0)return errno;
+            break;
+        case SIG_SIGUSR2:
+            if(sigqueue(pid, SIGUSR2, val)!=0)return errno;
+            break;
+        default:
+            return 1;
+    }
+    return 0;
+}
+
 int send(pid_t pid, enum TYPE type, enum SIGNAL signalType) {
     switch (type) {
         case KILL:
             return sendKill(pid, signalType);
         case SIGQUEUE:
-
+            return sendQueue(pid, signalType);
             break;
         case SIGRT:
             return sendSigrt(pid, signalType);
@@ -49,8 +68,8 @@ int send(pid_t pid, enum TYPE type, enum SIGNAL signalType) {
 int sender(pid_t pid, enum TYPE type, size_t numberOfSignals) {
     size_t i=0;
     for(;i<numberOfSignals;i++){
-        send(pid, type, SIG_SIGUSR1);
+        int ret = send(pid, type, SIG_SIGUSR1);
+        if(ret!=0)return ret;
     }
-    send(pid, type, SIG_SIGUSR2);
-    return 0;
+    return send(pid, type, SIG_SIGUSR2);
 }

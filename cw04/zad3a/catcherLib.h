@@ -8,5 +8,7 @@
 
 int receive();
 pid_t getSenderPid();
+int isQueue();
+int getLastIntValue();
 
 #endif //SYSOPY_CATCHERLIB_H
