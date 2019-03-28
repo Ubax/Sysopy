@@ -86,12 +86,10 @@ void signalINT(int signalno) {
 
 void signalStop(int signalno) {
     working=0;
-    exit(modifications);
 }
 
 void signalStart(int signalno) {
     working=1;
-    exit(modifications);
 }
 
 int monitor(char *fileName, time_t duration) {
@@ -103,6 +101,8 @@ int monitor(char *fileName, time_t duration) {
 
     modifications = 0;
     signal(SIGINT, &signalINT);
+    signal(STOP_INTTERUPT, &signalStop);
+    signal(START_INTTERUPT, &signalStart);
 
     struct FILE_IN_MEMORY fileInMemory;
     fileInMemory.data = NULL;
@@ -115,6 +115,7 @@ int monitor(char *fileName, time_t duration) {
                 perror(fileName);
                 exit(-1);
             }
+//            printf("Working\n");
 
             if (difftime(fileInfo.st_mtim.tv_sec, fileInMemory.modDate.tv_sec) > 0) {
                 modifications++;

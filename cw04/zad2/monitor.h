@@ -3,6 +3,9 @@
 #include <limits.h>
 #include <sys/types.h>
 
+#define STOP_INTTERUPT SIGUSR1
+#define START_INTTERUPT SIGUSR2
+
 #ifndef SYSOPY_MONITOR_H
 #define SYSOPY_MONITOR_H
 

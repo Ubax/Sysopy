@@ -103,7 +103,7 @@ void list(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
 }
 
 void stopPID(pid_t pid) {
-    if (kill(pid, SIGUSR1) != 0) {
+    if (kill(pid, STOP_INTTERUPT) != 0) {
         printf("Couldn't send a signal\n");
         perror("stop pid");
         errno = 0;
@@ -120,7 +120,7 @@ void stopAll(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
 }
 
 void startPID(pid_t pid) {
-    if (kill(pid, SIGUSR2) != 0) {
+    if (kill(pid, START_INTTERUPT) != 0) {
         printf("Couldn't send a signal\n");
         perror("start pid");
         errno = 0;
