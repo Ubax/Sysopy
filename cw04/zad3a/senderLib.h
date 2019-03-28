@@ -15,7 +15,7 @@ enum TYPE {
     SIGRT
 };
 
-int send(pid_t pid, enum TYPE type, enum SIGNAL signalType);
+int send(pid_t pid, enum TYPE type, enum SIGNAL signalType, int order);
 int sender(pid_t pid, enum TYPE type, size_t numberOfSignals);
 
 #endif //SYSOPY_SENDERLIB_H
