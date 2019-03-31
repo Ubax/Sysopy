@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include "monitor.h"
 #include "fileAnalyzer.h"
+#include "argsProcessor.h"
 
 
 struct PID_FILE_RECORD {
@@ -86,11 +87,6 @@ int main(int argc, char **argv) {
         else printf("PID: %i\tModifications: %i\n", results[i].pid, results[i].numberOfModifications);
     }
     return 0;
-}
-
-void toUpper(char *str) {
-    size_t i = 0;
-    for (; i < strlen(str); i++)str[i] = (char) toupper(str[i]);
 }
 
 void list(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
@@ -171,7 +167,14 @@ enum CMD readCMD() {
         scanf("%s", buf);
         toUpper(buf);
         if (strcmp(buf, "PID") == 0) {
-            scanf("%i", &cmdPID);
+            char buf[25];
+            scanf("%s", buf);
+            cmdPID=(int) strtol(buf, NULL, 10);
+            if(errno || cmdPID<10){
+                if(errno)perror("Invalid command argument");
+                else printf("Invalid command argument\n");
+                return NONE;
+            }
             return START_PID;
         }
         if (strcmp(buf, "ALL") == 0)return START_ALL;
@@ -180,7 +183,14 @@ enum CMD readCMD() {
         scanf("%s", buf);
         toUpper(buf);
         if (strcmp(buf, "PID") == 0) {
-            scanf("%i", &cmdPID);
+            char buf[25];
+            scanf("%s", buf);
+            cmdPID=(int) strtol(buf, NULL, 10);
+            if(errno  || cmdPID<10){
+                if(errno)perror("Invalid command argument");
+                else printf("Invalid command argument\n");
+                return NONE;
+            }
             return STOP_PID;
         }
         if (strcmp(buf, "ALL") == 0)return STOP_ALL;

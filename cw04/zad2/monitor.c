@@ -74,7 +74,7 @@ void pasteToArchive(struct FILE_IN_MEMORY *file) {
     my_log("\tFreeing memory...\n");
     free(file->data);
     file->data = NULL;
-    my_headers("File modified: %s\nSaved to: %s\n", file->fileName, destinationName);
+    my_headers("File modified: %s\nSaved to: %s in PID: %i\n", file->fileName, destinationName, getpid());
 }
 
 int modifications = 0;
@@ -115,11 +115,10 @@ int monitor(char *fileName, time_t duration) {
                 perror(fileName);
                 exit(-1);
             }
-//            printf("Working\n");
 
             if (difftime(fileInfo.st_mtim.tv_sec, fileInMemory.modDate.tv_sec) > 0) {
                 modifications++;
-                my_headers("File modified: %s\n", fileName);
+                my_headers("File modified: %s in PID: %i\n", fileName, getpid());
                 if (fileInMemory.data != NULL)pasteToArchive(&fileInMemory);
                 fileInMemory = copyToMemory(fileName, fileInfo.st_mtim);
             }
