@@ -55,6 +55,7 @@ void signalTSTP(int signalno) {
 }
 
 void signalINT(int signalno) {
+    printf("Odebrano sygnał SIGINT\n");
     if(!isProcessDead)kill(childPid, SIGKILL);
     exit(EXIT_SUCCESS);
 }
