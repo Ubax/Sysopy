@@ -32,8 +32,15 @@ enum CMD {
 enum CMD readCMD();
 
 void processCMD(enum CMD, struct PID_FILE_RECORD *, size_t);
+void end(int signalNumber);
 
 int cmdPID = 0;
+
+struct PID_FILE_RECORD * global_pid;
+size_t global_arraySize;
+
+/******** TO DO CTRL+C exit ********/
+
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -57,9 +64,9 @@ int main(int argc, char **argv) {
 
     struct FILES_ARRAY files_array = getFilesToWatchFromFile(argv[1]);
 
-    struct MONITOR_RESULT results[files_array.size];
-
     struct PID_FILE_RECORD pid[files_array.size];
+    global_pid=pid;
+    global_arraySize=files_array.size;
 
     size_t i = 0;
     for (; i < files_array.size; i++) {
@@ -70,23 +77,31 @@ int main(int argc, char **argv) {
         }
     }
 
+    signal(SIGINT, end);
+
     enum CMD currentCMD = NONE;
     while (currentCMD != END) {
         currentCMD = readCMD();
         processCMD(currentCMD, pid, files_array.size);
     }
-    i = 0;
-    for (; i < files_array.size; i++) {
-        kill(pid[i].pid, SIGINT);
+    end(0);
+    return 0;
+}
+
+void end(int signalNumber){
+    size_t i = 0;
+    struct MONITOR_RESULT results[global_arraySize];
+    for (; i < global_arraySize; i++) {
+        kill(global_pid[i].pid, SIGINT);
         results[i].pid = wait(&results[i].numberOfModifications);
         results[i].numberOfModifications = WEXITSTATUS(results[i].numberOfModifications);
     }
     i = 0;
-    for (; i < files_array.size; i++) {
-        if (results[i].numberOfModifications == -1)printf("PID: %i\tError\n", results[i].pid);
+    for (; i < global_arraySize; i++) {
+        if (results[i].numberOfModifications == 255)printf("PID: %i\tError\n", results[i].pid);
         else printf("PID: %i\tModifications: %i\n", results[i].pid, results[i].numberOfModifications);
     }
-    return 0;
+    exit(0);
 }
 
 void list(struct PID_FILE_RECORD *pidArray, size_t arraySize) {
