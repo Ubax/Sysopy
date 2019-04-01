@@ -1,8 +1,8 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "senderLib.h"
-#include "catcherLib.h"
 
 int sendKill(pid_t pid, enum SIGNAL signalType) {
     switch (signalType) {
@@ -56,19 +56,8 @@ int send(pid_t pid, enum TYPE type, enum SIGNAL signalType, int order) {
             return sendKill(pid, signalType);
         case SIGQUEUE:
             return sendQueue(pid, signalType, order);
-            break;
         case SIGRT:
             return sendSigrt(pid, signalType);
     }
     return 0;
-}
-
-int sender(pid_t pid, enum TYPE type, size_t numberOfSignals) {
-    size_t i=0;
-    //printf("S%ld\n", numberOfSignals);
-    for(;i<numberOfSignals;i++){
-        int ret = send(pid, type, SIG_SIGUSR1, i);
-        if(ret!=0)return ret;
-    }
-    return send(pid, type, SIG_SIGUSR2, i);
 }

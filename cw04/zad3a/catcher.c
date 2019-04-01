@@ -3,40 +3,73 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "argsProcessor.h"
-#include "catcherLib.h"
+#include "inits.h"
 #include "senderLib.h"
 
 void printWelcome();
 void printGoodbye(size_t numberOfSignals);
-void lockSignals();
 enum TYPE getTypeFormArgv(char ** argv, int i);
+void onSigKill(int sig, siginfo_t *info, void *ucontext);
+void onSigRT(int sig, siginfo_t *info, void *ucontext);
+
+enum TYPE type;
+size_t numberOfSignals = 0;
+int receiving = 1;
+pid_t senderPID = 0;
 
 int main(int argc, char **argv) {
     if(argc<2){
         printf("Program expects at last 1 argument: [method of sending]\n");
         return 1;
     }
-    enum TYPE type = getTypeFormArgv(argv, 1);
-
-    lockSignals();
+    type = getTypeFormArgv(argv, 1);
 
     printWelcome();
 
-    size_t numberOfSignals = (size_t)receive(type);
-    pid_t senderPID = getSenderPid();
+    if(type==KILL)initSignals(&onSigKill);
+    else if(type==SIGQUEUE)initSignals(&onSigKill);
+    else if(type==SIGRT)initRTSignals(&onSigRT);
 
-    if(sender(senderPID, type, numberOfSignals)!=0){
-        perror("SIGNAL ERROR");
-    };
+    while(receiving){
+        sleep(1);
+    }
+
+    size_t i=0;
+    for(;i<numberOfSignals;i++){
+        if(send(senderPID, type, SIG_SIGUSR1, i)){
+            perror("Sending signal");
+            break;
+        }
+    }
+
+    if(send(senderPID, type, SIG_SIGUSR2, 0)){
+        perror("Sending signal");
+        exit(1);
+    }
 
     printGoodbye(numberOfSignals);
     return 0;
 }
 
-void lockSignals(){
-    size_t i =0;
-    for(;i<31;i++){
-        if(i!=SIGUSR1 && i!=SIGUSR2)signal((int)i, SIG_IGN);
+void onSigKill(int sig, siginfo_t *info, void *ucontext) {
+    if (sig == SIGUSR1) {
+        if (receiving) {
+            senderPID = info->si_pid;
+            numberOfSignals++;
+        }
+    } else if (sig == SIGUSR2) {
+        receiving = 0;
+    }
+}
+
+void onSigRT(int sig, siginfo_t *info, void *ucontext) {
+    if (sig == SIG_REAL_USR1) {
+        if (receiving) {
+            senderPID = info->si_pid;
+            numberOfSignals++;
+        }
+    } else if (sig == SIG_REAL_USR2) {
+        receiving = 0;
     }
 }
 

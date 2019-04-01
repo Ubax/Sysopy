@@ -11,6 +11,8 @@ void on_sigusr1(int sig, siginfo_t *info, void *ucontext);
 int sender(pid_t pid, enum TYPE type, size_t numberOfSignals);
 
 int waiting=0;
+int numberOfReceivedSignals = 0;
+size_t numberOfSignals = 0;
 
 int main(int argc, char **argv) {
 
@@ -23,17 +25,9 @@ int main(int argc, char **argv) {
         printf("Wrong catcher pid\n");
         return 1;
     }
-    size_t numberOfSignals=getArgAsSizeT(argv, 2);
+    numberOfSignals=getArgAsSizeT(argv, 2);
 
     enum TYPE type = getTypeFormArgv(argv, 3);
-
-    struct sigaction actUsr1;
-    sigemptyset(&actUsr1.sa_mask);
-    actUsr1.sa_flags = SA_SIGINFO;
-    actUsr1.sa_sigaction = &on_sigusr1;
-
-    if (sigaction(SIGUSR1, &actUsr1, NULL) != 0)return -1;
-    if (sigaction(SIG_REAL_USR1, &actUsr1, NULL) != 0)return -1;
 
     if(sender(catcherPID, type, numberOfSignals)){
         perror("sender");
@@ -43,7 +37,65 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+int initSignals(void (*fun)(int, siginfo_t *, void *)){
+    struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO;
+    act.sa_sigaction = fun;
+
+    if (sigaction(SIGUSR1, &act, NULL) != 0 || sigaction(SIGUSR2, &act, NULL) != 0)
+    {
+        perror("Init Signals");
+        exit(1);
+    }
+    return 0;
+}
+
+int initRTSignals(void (*fun)(int, siginfo_t *, void *)){
+    struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO;
+    act.sa_sigaction = fun;
+
+    if (sigaction(SIG_REAL_USR1, &act, NULL) != 0 || sigaction(SIG_REAL_USR2, &act, NULL) != 0)
+    {
+        perror("Init Signals");
+        exit(1);
+    }
+    return 0;
+}
+
+void onSigKill(int sig, siginfo_t *info, void *ucontext) {
+    if(sig==SIGUSR1){
+        numberOfReceivedSignals++;
+        printf("Received answer\n");
+        waiting=0;
+    }else if(sig==SIGUSR2){
+        if(numberOfReceivedSignals<numberOfSignals){
+            printf("Expected: %ld\tGot: %i\n", numberOfSignals, numberOfReceivedSignals);
+            exit(1);
+        }
+    }
+}
+
+void onSigRT(int sig, siginfo_t *info, void *ucontext) {
+    if (sig == SIG_REAL_USR1) {
+        numberOfReceivedSignals++;
+        printf("Received answer\n");
+        waiting=0;
+    } else if (sig == SIG_REAL_USR2) {
+        if(numberOfReceivedSignals<numberOfSignals){
+            printf("Expected: %ld\tGot: %i\n", numberOfSignals, numberOfReceivedSignals);
+            exit(1);
+        }
+    }
+}
+
 int sender(pid_t pid, enum TYPE type, size_t numberOfSignals) {
+    if(type==KILL)initSignals(&onSigKill);
+    if(type==SIGQUEUE)initSignals(&onSigKill);
+    else if(type==SIGRT)initRTSignals(&onSigRT);
+
     size_t i=0;
     for(;i<numberOfSignals;i++){
         int ret = send(pid, type, SIG_SIGUSR1, i);
@@ -52,11 +104,6 @@ int sender(pid_t pid, enum TYPE type, size_t numberOfSignals) {
         while(waiting){sleep(1);}
     }
     return send(pid, type, SIG_SIGUSR2, i);
-}
-
-void on_sigusr1(int sig, siginfo_t *info, void *ucontext){
-    printf("Received answer\n");
-    waiting=0;
 }
 
 
