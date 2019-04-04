@@ -5,7 +5,6 @@
 #include <sys/wait.h>
 
 #define LINE_MAX_LENGTH 8096
-#define NO_COMMAND 2
 #define MAX_NUMBER_OF_COMMANDS 128
 #define MAX_NUMBER_OF_ARGS 64
 
@@ -83,8 +82,8 @@ int runCommands(struct Command commands[MAX_NUMBER_OF_COMMANDS], int numberOfCom
         }
         close(oldFd[0]);
         close(newFd[1]);
+        wait(NULL);
     }
-    for (; i < numberOfCommands; i++)wait(NULL);
     return 0;
 }
 
@@ -116,6 +115,7 @@ int analyseFile(char *fileName) {
             struct Command command = getCommand(operations[i]);
             commands[i] = command;
         }
+        printf("Line %i results:\n", numberOfLine);
         runCommands(commands, numberOfCommand);
     }
     free(line);
