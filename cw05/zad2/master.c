@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LINE_MAX_LENGTH 128
 
@@ -11,18 +12,20 @@ int main(int argc, char **argv) {
         printf("Program expects at last 1 argument: [fifo name]\n");
         return 1;
     }
-    mkfifo(argv[1], S_IRUSR | S_IWUSR);
-    char *bufor=malloc(LINE_MAX_LENGTH* sizeof(char));
+    if(mkfifo(argv[1], S_IRUSR | S_IWUSR)<0){
+        perror("FIFO creating");
+        return 1;
+    }
+    char *bufor=malloc(LINE_MAX_LENGTH * sizeof(char));
     FILE* file = fopen(argv[1], "r");
-    if(file==NULL){
+    if(!file){
         perror("FIFO OPENING");
         return 1;
     }
-    size_t size = LINE_MAX_LENGTH;
-    while (getline(&bufor, &size, file) != -1) {
+    while (fgets(bufor, LINE_MAX_LENGTH, file)!=NULL) {
         printf("%s", bufor);
     }
     free(bufor);
-
+    fclose(file);
     return 0;
 }
