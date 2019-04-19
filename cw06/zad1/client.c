@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "communication.h"
 #include "argsProcessor.h"
@@ -67,11 +68,25 @@ void do_init() {
     msg.mType = INIT;
     sprintf(text, "%i", clientQueueId);
     strcpy(msg.message, text);
-    msg.senderId = clientId;
+    msg.senderId = getpid();
     if (msgsnd(serverQueueId, &msg, MSGSZ, IPC_NOWAIT)) ERROR_EXIT("Sending");
     receive(&msg);
     if (msg.mType != INIT) MESSAGE_EXIT("Wrong response type");
     sscanf(msg.message, "%i", &clientId);
+}
+
+void do_friends(char args[MAX_COMMAND_LENGTH]) {
+    char command[MAX_COMMAND_LENGTH], text[MESSAGE_SIZE];
+    int numberOfArguments = sscanf(args, "%s %s", command, text);
+    if (numberOfArguments == EOF || numberOfArguments == 0) MESSAGE_EXIT("Error in sscanf\n");
+    send(FRIENDS, text);
+}
+
+void do_2_all(char args[MAX_COMMAND_LENGTH]){
+    char command[MAX_COMMAND_LENGTH], text[MESSAGE_SIZE];
+    int numberOfArguments = sscanf(args, "%s %s", command, text);
+    if (numberOfArguments == EOF || numberOfArguments < 2) MESSAGE_EXIT("2All expects text to write");
+    send(_2ALL, text);
 }
 
 int runCommand(FILE *file) {
@@ -84,9 +99,9 @@ int runCommand(FILE *file) {
     } else if (compare(command, "LIST")) {
         do_list();
     } else if (compare(command, "FRIENDS")) {
-        printf("friends\n");
+        do_friends(args);
     } else if (compare(command, "2ALL")) {
-        printf("2all\n");
+        do_2_all(args);
     } else if (compare(command, "2FRIENDS")) {
         printf("2friends\n");
     } else if (compare(command, "2ONE")) {
@@ -102,7 +117,34 @@ int runCommand(FILE *file) {
     return 0;
 }
 
+void cleanExit(){
+    if (msgctl(clientQueueId, IPC_RMID, NULL) == -1) ERROR_EXIT("Deleting queue");
+    exit(0);
+}
+
+void exitSignal(int signalno){
+    do_stop();
+    cleanExit();
+}
+
+void notifySignal(int signalno){
+    struct MESSAGE msg;
+    receive(&msg);
+    switch(msg.mType){
+        case _2ALL:
+        case _2FRIENDS:
+        case _2ONE:
+            printf("%s", msg.message);
+            break;
+        case STOP:
+            cleanExit();
+            break;
+    }
+}
+
 int main(int argc, char **argv) {
+    signal(SIGRTMIN, notifySignal);
+    signal(SIGINT, exitSignal);
     if ((serverQueueId = msgget(getServerQueueKey(), 0)) == -1) ERROR_EXIT("Opening queue");
     if ((clientQueueId = msgget(getClientQueueKey(), IPC_CREAT | IPC_EXCL | 0666)) == -1) ERROR_EXIT(
             "Opening client queue");
@@ -110,7 +152,7 @@ int main(int argc, char **argv) {
     while (running) {
         runCommand(fdopen(STDIN_FILENO, "r"));
     }
-    if (msgctl(clientQueueId, IPC_RMID, NULL) == -1) ERROR_EXIT("Deleting queue");
+    cleanExit();
     return 0;
 }
 
@@ -119,7 +161,7 @@ int send(enum COMMAND type, char text[MESSAGE_SIZE]) {
     msg.mType = type;
     strcpy(msg.message, text);
     msg.senderId = clientId;
-    if (msgsnd(serverQueueId, &msg, MSGSZ, IPC_NOWAIT)==-1) ERROR_EXIT("Sending");
+    if (msgsnd(serverQueueId, &msg, MSGSZ, IPC_NOWAIT) == -1) ERROR_EXIT("Sending");
     return 0;
 }
 

@@ -10,42 +10,44 @@
 
 #define MESSAGE_SIZE 2048
 #define MAX_COMMAND_LENGTH MESSAGE_SIZE
-#define MAX_COMMAND_ID 10
+#define MAX_COMMAND_ID 15
 #define KEY_LETTER 'a'
 #define MAX_NUMBER_OF_CLIENTS 20
 
-struct MESSAGE{
+struct MESSAGE {
     long mType;
     pid_t senderId;
     char message[MESSAGE_SIZE];
 };
 
 
-enum COMMAND{
-    STOP = MAX_COMMAND_ID - 7,
-    INIT = MAX_COMMAND_ID - 6,
-    LIST = MAX_COMMAND_ID - 5,
-    FRIENDS = MAX_COMMAND_ID - 4,
-    ECHO = MAX_COMMAND_ID - 3,
-    _2ONE = MAX_COMMAND_ID - 2,
-    _2FRIENDS = MAX_COMMAND_ID - 1,
-    _2ALL = MAX_COMMAND_ID,
+enum COMMAND {
+    STOP = 1,
+    INIT,
+    LIST,
+    FRIENDS,
+    ADD,
+    DEL,
+    ECHO,
+    _2ONE,
+    _2FRIENDS,
+    _2ALL,
 };
 
 
-key_t getServerQueueKey(){
-    char* homeDir = getenv("HOME");
-    if(homeDir==NULL)MESSAGE_EXIT("No home environment variable");
-    key_t key = ftok(homeDir,KEY_LETTER);
-    if(key==-1)ERROR_EXIT("Generating key");
-    return  key;
+key_t getServerQueueKey() {
+    char *homeDir = getenv("HOME");
+    if (homeDir == NULL) MESSAGE_EXIT("No home environment variable");
+    key_t key = ftok(homeDir, KEY_LETTER);
+    if (key == -1) ERROR_EXIT("Generating key");
+    return key;
 }
 
-key_t getClientQueueKey(){
-    char* homeDir = getenv("HOME");
-    if(homeDir==NULL)MESSAGE_EXIT("No home environment variable");
-    key_t key = ftok(homeDir,getpid());
-    if(key==-1)ERROR_EXIT("Generating key");
+key_t getClientQueueKey() {
+    char *homeDir = getenv("HOME");
+    if (homeDir == NULL) MESSAGE_EXIT("No home environment variable");
+    key_t key = ftok(homeDir, getpid());
+    if (key == -1) ERROR_EXIT("Generating key");
     return key;
 }
 
