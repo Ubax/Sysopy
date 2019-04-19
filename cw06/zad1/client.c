@@ -34,6 +34,7 @@ void do_read(char args[MAX_COMMAND_LENGTH]) {
     int numberOfArguments = sscanf(args, "%s %s", command, fileName);
     if (numberOfArguments == EOF || numberOfArguments < 2) MESSAGE_EXIT("Read expects file name");
     FILE *f = fopen(fileName, "r");
+    if(f==NULL)ERROR_EXIT("opening commands file");
     while (runCommand(f) != EOF);
     fclose(f);
 }
@@ -82,11 +83,20 @@ void do_friends(char args[MAX_COMMAND_LENGTH]) {
     send(FRIENDS, text);
 }
 
-void do_2_all(char args[MAX_COMMAND_LENGTH]){
+void do_2_operation(enum COMMAND type, char args[MAX_COMMAND_LENGTH]){
     char command[MAX_COMMAND_LENGTH], text[MESSAGE_SIZE];
     int numberOfArguments = sscanf(args, "%s %s", command, text);
-    if (numberOfArguments == EOF || numberOfArguments < 2) MESSAGE_EXIT("2All expects text to write");
-    send(_2ALL, text);
+    if (numberOfArguments == EOF || numberOfArguments < 2) MESSAGE_EXIT("2 command expects text to write");
+    send(type, text);
+}
+
+void do_2_one(char args[MAX_COMMAND_LENGTH]){
+    char command[MAX_COMMAND_LENGTH], text[MESSAGE_SIZE];
+    int receiverId;
+    int numberOfArguments = sscanf(args, "%s %i %s", command, &receiverId, text);
+    if (numberOfArguments == EOF || numberOfArguments < 3) MESSAGE_EXIT("2one command expects id and text to write");
+    sprintf(command, "%i %s", receiverId, text);
+    send(_2ONE, command);
 }
 
 int runCommand(FILE *file) {
@@ -101,11 +111,11 @@ int runCommand(FILE *file) {
     } else if (compare(command, "FRIENDS")) {
         do_friends(args);
     } else if (compare(command, "2ALL")) {
-        do_2_all(args);
+        do_2_operation(_2ALL, args);
     } else if (compare(command, "2FRIENDS")) {
-        printf("2friends\n");
+        do_2_operation(_2FRIENDS, args);
     } else if (compare(command, "2ONE")) {
-        printf("2one\n");
+        do_2_one(args);
     } else if (compare(command, "STOP")) {
         do_stop();
         return EOF;
@@ -166,6 +176,6 @@ int send(enum COMMAND type, char text[MESSAGE_SIZE]) {
 }
 
 int receive(struct MESSAGE *msg) {
-    if (msgrcv(clientQueueId, msg, MSGSZ, 0, 0) == -1) ERROR_EXIT("Receiving response");
+    if (msgrcv(clientQueueId, msg, MSGSZ, -(MAX_COMMAND_ID+1), 0) == -1) ERROR_EXIT("Receiving response");
     return 0;
 }
