@@ -1,9 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/msg.h>
-#include <string.h>
-#include <signal.h>
-
 #include "communication.h"
 
 struct CLIENT {
@@ -14,7 +8,7 @@ struct CLIENT {
 };
 
 int running = 1;
-int queueId = -1;
+mqd_t queueId = -1;
 struct CLIENT clients[MAX_NUMBER_OF_CLIENTS];
 
 int processResponse(struct MESSAGE *msg);
@@ -42,7 +36,8 @@ int canSendTo(int clientId) {
 }
 
 void cleanExit() {
-    if (msgctl(queueId, IPC_RMID, NULL) == -1) ERROR_EXIT("Deleting queue");
+    if (mq_close(queueId) == -1) ERROR_EXIT("Closing queue");
+    if (mq_unlink(SERVER_QUEUE_NAME) == -1) ERROR_EXIT("Deleting queue");
     exit(0);
 }
 
@@ -57,10 +52,14 @@ int main() {
         clients[i].queueId = -1;
         clients[i].numberOfFriends = 0;
     }
-    if ((queueId = msgget(getServerQueueKey(), IPC_CREAT | IPC_EXCL | 0666)) == -1) ERROR_EXIT("Creating queue");
+    struct mq_attr queue_attr;
+    queue_attr.mq_maxmsg = MAX_QUEUE_SIZE;
+    queue_attr.mq_msgsize = MESSAGE_SIZE;
+    if ((queueId = mq_open(SERVER_QUEUE_NAME, O_RDONLY | O_CREAT | O_EXCL, 0666, &queue_attr)) == -1)
+        ERROR_EXIT("Creating queue");
     struct MESSAGE msgbuf;
     while (running) {
-        if (msgrcv(queueId, &msgbuf, MSGSZ, 0, 0) == -1) ERROR_EXIT("Receiving");
+        if (mq_receive(queueId, &msgbuf, MSGSZ, NULL) == -1) ERROR_EXIT("Receiving");
         processResponse(&msgbuf);
     }
     cleanExit(queueId);
@@ -273,7 +272,7 @@ void do_del(int clientId, char msg[MESSAGE_SIZE]) {
             if (i >= (*numberOfFriends))id = -1;
             if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
                 printf("\t\t%i\n", clients[clientId].friends[i]);
-                clients[clientId].friends[i] = clients[clientId].friends[(*numberOfFriends)-1];
+                clients[clientId].friends[i] = clients[clientId].friends[(*numberOfFriends) - 1];
                 (*numberOfFriends)--;
             }
             elem = strtok(NULL, LIST_DELIMITER);
