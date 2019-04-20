@@ -29,6 +29,10 @@ void do_list(int clientId);
 
 void do_friends(int clientId, char msg[MESSAGE_SIZE]);
 
+void do_add(int clientId, char msg[MESSAGE_SIZE]);
+
+void do_del(int clientId, char msg[MESSAGE_SIZE]);
+
 void do_2_all(int clientId, char msg[MESSAGE_SIZE]);
 
 void do_2_friends(int clientId, char msg[MESSAGE_SIZE]);
@@ -56,7 +60,7 @@ int main() {
     if ((queueId = msgget(getServerQueueKey(), IPC_CREAT | IPC_EXCL | 0666)) == -1) ERROR_EXIT("Creating queue");
     struct MESSAGE msgbuf;
     while (running) {
-        if (msgrcv(queueId, &msgbuf, MSGSZ, -(MAX_COMMAND_ID + 1), 0) == -1) ERROR_EXIT("Receiving");
+        if (msgrcv(queueId, &msgbuf, MSGSZ, 0, 0) == -1) ERROR_EXIT("Receiving");
         processResponse(&msgbuf);
     }
     cleanExit(queueId);
@@ -138,38 +142,6 @@ void do_list(int clientId) {
     send(clientId, LIST, response);
 }
 
-void do_friends(int clientId, char msg[MESSAGE_SIZE]) {
-    if (clientId >= MAX_NUMBER_OF_CLIENTS || clientId < 0 || clients[clientId].queueId == -1) {
-        printf("Unknown client %i\n", clientId);
-        return;
-    }
-    printf("Setting friends of %i...\n", clientId);
-    char list[MESSAGE_SIZE];
-    int num = sscanf(msg, "%s", list);
-    if (num == EOF) {
-        printf("Scanning problem: %i\n", clientId);
-        return;
-    }
-    if (num == 0) {
-        clients[clientId].numberOfFriends = 0;
-    } else if (num == 1) {
-        printf("\tfriends:\n");
-        clients[clientId].numberOfFriends = 0;
-        char *elem = strtok(list, ";");
-        while (elem != NULL && clients[clientId].numberOfFriends < MAX_NUMBER_OF_CLIENTS) {
-            int id = (int) strtol(elem, NULL, 10);
-            for (int i = 0; i < clients[clientId].numberOfFriends; i++)
-                if (id == clients[clientId].friends[i])id = -1;
-            if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
-                clients[clientId].friends[clients[clientId].numberOfFriends] = id;
-                printf("\t\t%i\n", clients[clientId].friends[clients[clientId].numberOfFriends]);
-                clients[clientId].numberOfFriends++;
-            }
-            elem = strtok(NULL, ";");
-        }
-    }
-}
-
 void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
     printf("Sending message to all...\n");
     char response[MESSAGE_SIZE];
@@ -187,7 +159,7 @@ void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
 }
 
 void do_2_friends(int clientId, char msg[MESSAGE_SIZE]) {
-    printf("Sending message to all...\n");
+    printf("Sending message to friends...\n");
     char response[MESSAGE_SIZE];
     char date[64];
     FILE *f = popen("date", "r");
@@ -197,14 +169,16 @@ void do_2_friends(int clientId, char msg[MESSAGE_SIZE]) {
     for (int i = 0; i < clients[clientId].numberOfFriends; i++) {
         int to = clients[clientId].friends[i];
         if (canSendTo(to)) {
+            printf("%i\t", to);
             send(to, _2FRIENDS, response);
             kill(clients[to].pid, SIGRTMIN);
         }
     }
+    printf("\n");
 }
 
 void do_2_one(int clientId, char msg[MESSAGE_SIZE]) {
-    printf("Sending message to all...\n");
+    printf("Sending message to one...\n");
     char text[MESSAGE_SIZE];
     char response[MESSAGE_SIZE];
     char date[64];
@@ -217,6 +191,94 @@ void do_2_one(int clientId, char msg[MESSAGE_SIZE]) {
     if (canSendTo(to)) {
         send(to, _2FRIENDS, response);
         kill(clients[to].pid, SIGRTMIN);
+    }
+}
+
+void add_friends(int clientId, char list[MESSAGE_SIZE]) {
+    char *elem = strtok(list, LIST_DELIMITER);
+
+    while (elem != NULL && clients[clientId].numberOfFriends < MAX_NUMBER_OF_CLIENTS) {
+        int id = (int) strtol(elem, NULL, 10);
+        for (int i = 0; i < clients[clientId].numberOfFriends; i++)
+            if (id == clients[clientId].friends[i])id = -1;
+        if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
+            clients[clientId].friends[clients[clientId].numberOfFriends] = id;
+            printf("\t\t%i\n", clients[clientId].friends[clients[clientId].numberOfFriends]);
+            clients[clientId].numberOfFriends++;
+        }
+        elem = strtok(NULL, LIST_DELIMITER);
+    }
+}
+
+void do_friends(int clientId, char msg[MESSAGE_SIZE]) {
+    if (!canSendTo(clientId)) {
+        printf("Unknown client %i\n", clientId);
+        return;
+    }
+    printf("Setting friends of %i...\n", clientId);
+
+    char list[MESSAGE_SIZE];
+    int num = sscanf(msg, "%s", list);
+
+    clients[clientId].numberOfFriends = 0;
+    if (num == 1) {
+        printf("\tfriends:\n");
+        add_friends(clientId, list);
+    }
+}
+
+void do_add(int clientId, char msg[MESSAGE_SIZE]) {
+    if (!canSendTo(clientId)) {
+        printf("Unknown client %i\n", clientId);
+        return;
+    }
+    printf("Adding friends of %i...\n", clientId);
+
+    char list[MESSAGE_SIZE];
+    int num = sscanf(msg, "%s", list);
+
+    if (num == EOF || num == 0) {
+        printf("Scanning problem: %i\n", clientId);
+        return;
+    } else if (num == 1) {
+        printf("\tfriends:\n");
+        add_friends(clientId, list);
+    }
+}
+
+void do_del(int clientId, char msg[MESSAGE_SIZE]) {
+    if (!canSendTo(clientId)) {
+        printf("Unknown client %i\n", clientId);
+        return;
+    }
+    printf("Deleting friends of %i...\n", clientId);
+
+    char list[MESSAGE_SIZE];
+    int num = sscanf(msg, "%s", list);
+    char *elem = NULL;
+    int *numberOfFriends = &clients[clientId].numberOfFriends;
+    int id = -1;
+    int i = 0;
+
+    if (num == EOF || num == 0) {
+        printf("Scanning problem: %i\n", clientId);
+        return;
+    } else if (num == 1) {
+        printf("\tfriends:\n");
+        elem = strtok(list, LIST_DELIMITER);
+        while (elem != NULL && (*numberOfFriends) > 0) {
+            id = (int) strtol(elem, NULL, 10);
+            i = 0;
+            for (; i < (*numberOfFriends); i++)
+                if (id == clients[clientId].friends[i])break;
+            if (i >= (*numberOfFriends))id = -1;
+            if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
+                printf("\t\t%i\n", clients[clientId].friends[i]);
+                clients[clientId].friends[i] = clients[clientId].friends[(*numberOfFriends)-1];
+                (*numberOfFriends)--;
+            }
+            elem = strtok(NULL, LIST_DELIMITER);
+        }
     }
 }
 
@@ -245,6 +307,12 @@ int processResponse(struct MESSAGE *msg) {
             break;
         case _2ONE:
             do_2_one(msg->senderId, msg->message);
+            break;
+        case ADD:
+            do_add(msg->senderId, msg->message);
+            break;
+        case DEL:
+            do_del(msg->senderId, msg->message);
             break;
     }
     return 0;

@@ -13,6 +13,7 @@
 #define MAX_COMMAND_ID 15
 #define KEY_LETTER 'a'
 #define MAX_NUMBER_OF_CLIENTS 20
+#define LIST_DELIMITER ";"
 
 struct MESSAGE {
     long mType;
