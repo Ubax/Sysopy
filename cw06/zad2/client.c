@@ -54,9 +54,10 @@ void do_list() {
 }
 
 void do_stop() {
+    printf("Stopping...\n");
     running = 0;
     send(STOP, "");
-    if (mq_close(serverQueueId) == -1) ERROR_EXIT("Closing server queue");
+    exit(0);
 }
 
 void do_init() {
@@ -110,7 +111,10 @@ void do_2_one(char args[MAX_COMMAND_LENGTH]) {
     char command[MAX_COMMAND_LENGTH], text[MESSAGE_SIZE];
     int receiverId;
     int numberOfArguments = sscanf(args, "%s %i %s", command, &receiverId, text);
-    if (numberOfArguments == EOF || numberOfArguments < 3) MESSAGE_EXIT("2one command expects id and text to write");
+    if (numberOfArguments == EOF || numberOfArguments < 3) {
+        printf("2one command expects id and text to write\n");
+        return;
+    }
     sprintf(command, "%i %s", receiverId, text);
     send(_2ONE, command);
 }
@@ -148,15 +152,15 @@ int runCommand(FILE *file) {
 }
 
 void cleanExit() {
+    if (mq_close(serverQueueId) == -1) ERROR_EXIT("Closing server queue");
     if (mq_close(clientQueueId) == -1) ERROR_EXIT("Closing client queue");
-    if (mq_unlink(SERVER_QUEUE_NAME) == -1) ERROR_EXIT("Deleting queue");
+    if (mq_unlink(queueName) == -1) ERROR_EXIT("Deleting queue");
     free(queueName);
-    exit(0);
 }
 
 void exitSignal(int signalno) {
     do_stop();
-    cleanExit();
+    exit(0);
 }
 
 void notifySignal(int signalno) {
@@ -169,12 +173,13 @@ void notifySignal(int signalno) {
             printf("%s", msg.message);
             break;
         case STOP:
-            cleanExit();
+            do_stop();
             break;
     }
 }
 
 int main(int argc, char **argv) {
+    if (atexit(cleanExit) == -1) MESSAGE_EXIT("Registering atexit failed");
     signal(SIGRTMIN, notifySignal);
     signal(SIGINT, exitSignal);
     queueName=getClientQueueName();
@@ -189,7 +194,6 @@ int main(int argc, char **argv) {
     while (running) {
         runCommand(fdopen(STDIN_FILENO, "r"));
     }
-    cleanExit();
     return 0;
 }
 

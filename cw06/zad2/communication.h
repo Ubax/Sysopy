@@ -11,7 +11,7 @@
 
 
 #define ERROR_EXIT(msg){perror(msg);exit(1);}
-#define MESSAGE_EXIT(msg, ...){printf(msg, ##__VA_ARGS__);exit(1);}
+#define MESSAGE_EXIT(msg, ...){printf(msg, ##__VA_ARGS__);exit(0);}
 
 #define MESSAGE_SIZE 2048
 #define MAX_COMMAND_LENGTH MESSAGE_SIZE
@@ -44,16 +44,16 @@ enum COMMAND {
 unsigned commandPiority(enum COMMAND cmd){
     switch(cmd){
         case STOP:
-            return 1;
+            return 4;
         case INIT:
-            return 2;
+            return 3;
         case FRIENDS:
         case ADD:
         case DEL:
         case LIST:
-            return 3;
+            return 2;
         default:
-            return 4;
+            return 1;
     }
 }
 
