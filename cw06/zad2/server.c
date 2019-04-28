@@ -1,7 +1,7 @@
 #include "communication.h"
 
 struct CLIENT {
-    int queueId;
+    mqd_t queueId;
     int friends[MAX_NUMBER_OF_CLIENTS];
     int numberOfFriends;
     pid_t pid;
@@ -38,31 +38,39 @@ int canSendTo(int clientId) {
 void cleanExit() {
     if (mq_close(queueId) == -1) ERROR_EXIT("Closing queue");
     if (mq_unlink(SERVER_QUEUE_NAME) == -1) ERROR_EXIT("Deleting queue");
-    exit(0);
 }
 
 void exitSignal(int signalno) {
     do_stop(-1);
-    cleanExit();
+    exit(0);
 }
 
-int main() {
+void init_variables() {
+    if (atexit(cleanExit) == -1) MESSAGE_EXIT("Registering atexit failed");
     signal(SIGINT, exitSignal);
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i=0;for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         clients[i].queueId = -1;
         clients[i].numberOfFriends = 0;
     }
+}
+
+int main() {
+    init_variables();
+
     struct mq_attr queue_attr;
     queue_attr.mq_maxmsg = MAX_QUEUE_SIZE;
     queue_attr.mq_msgsize = MESSAGE_SIZE;
-    if ((queueId = mq_open(SERVER_QUEUE_NAME, O_RDONLY | O_CREAT | O_EXCL, 0666, &queue_attr)) == -1)
-        ERROR_EXIT("Creating queue");
+
+    if ((queueId = mq_open(SERVER_QUEUE_NAME, O_RDONLY | O_CREAT | O_EXCL, 0666, &queue_attr)) == -1) ERROR_EXIT(
+            "Creating queue");
+
     struct MESSAGE msgbuf;
     while (running) {
-        if (mq_receive(queueId, &msgbuf, MSGSZ, NULL) == -1) ERROR_EXIT("Receiving");
+        msgbuf.mType=-1;
+        msgbuf.senderId=-1;
+        if (mq_receive(queueId, (char *) &msgbuf, MESSAGE_SIZE, NULL) == -1) ERROR_EXIT("Receiving");
         processResponse(&msgbuf);
     }
-    cleanExit(queueId);
     return 0;
 }
 
@@ -76,8 +84,29 @@ int send(int clientId, enum COMMAND type, char text[MESSAGE_SIZE]) {
         return 1;
     }
 
-    if (msgsnd(clients[clientId].queueId, &msg, MSGSZ, IPC_NOWAIT)) ERROR_EXIT("Sending");
+    if (mq_send(clients[clientId].queueId, (char *) &msg, MESSAGE_SIZE, commandPiority(type))) ERROR_EXIT("Sending");
     return 0;
+}
+
+void do_init(int clientPID, char message[MESSAGE_SIZE]) {
+    int clientId = 0;
+    for (; clientId < MAX_NUMBER_OF_CLIENTS; clientId++) {
+        if (clients[clientId].queueId == -1)break;
+    }
+    if (clientId >= MAX_NUMBER_OF_CLIENTS) {
+        printf("Too many clients\n");
+        return;
+    }
+    if ((clients[clientId].queueId = mq_open(SERVER_QUEUE_NAME, O_WRONLY)) == -1) ERROR_EXIT(
+            "Creating queue");
+    clients[clientId].pid = clientPID;
+    clients[clientId].numberOfFriends = 0;
+
+    printf("Init of client %i with id %i...\n", clients[clientId].queueId, clientId);
+
+    char text[MESSAGE_SIZE];
+    sprintf(text, "%i", clientId);
+    send(clientId, INIT, text);
 }
 
 void do_echo(int clientId, char msg[MESSAGE_SIZE]) {
@@ -94,44 +123,31 @@ void do_echo(int clientId, char msg[MESSAGE_SIZE]) {
 
 void do_stop(int clientId) {
     printf("Stopping...\n");
-    if (clientId >= 0)clients[clientId].queueId = -1;
 
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    if (clientId >= 0) {
+        clients[clientId].queueId = -1;
+        if (mq_close(clients[clientId].queueId) == -1) {
+            ERROR_EXIT("Closing queue");
+        } else printf("Successfully closed client queue\n");
+    }
+
+    int i=0;for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (clients[i].queueId >= 0) {
             send(i, STOP, "");
+            if (mq_close(clients[i].queueId) == -1) {
+                ERROR_EXIT("Closing queue");
+            } else printf("Successfully closed client queue\n");
             kill(clients[i].pid, SIGRTMIN);
         }
     }
     running = 0;
 }
 
-void do_init(int clientPID, char message[MESSAGE_SIZE]) {
-    int clientId = 0;
-    for (; clientId < MAX_NUMBER_OF_CLIENTS; clientId++) {
-        if (clients[clientId].queueId == -1)break;
-    }
-    if (clientId >= MAX_NUMBER_OF_CLIENTS) {
-        printf("Too many clients\n");
-        return;
-    }
-    int clientQueueId;
-    sscanf(message, "%i", &clientQueueId);
-    clients[clientId].queueId = clientQueueId;
-    clients[clientId].pid = clientPID;
-    clients[clientId].numberOfFriends = 0;
-
-    printf("Init of client %i with id %i...\n", clientQueueId, clientId);
-
-    char text[MESSAGE_SIZE];
-    sprintf(text, "%i", clientId);
-    send(clientId, INIT, text);
-}
-
 void do_list(int clientId) {
     printf("Sending list to %i...\n", clientId);
     char response[MESSAGE_SIZE], buf[MESSAGE_SIZE];
     strcpy(response, "");
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i=0;for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (clients[i].queueId >= 0) {
             sprintf(buf, "Id: %i\tQueueID: %i\n", i, clients[i].queueId);
             strcat(response, buf);
@@ -148,7 +164,7 @@ void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
     fread(date, sizeof(char), 64, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i=0;for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (i != clientId && clients[i].queueId != -1) {
             send(i, _2ALL, response);
             kill(clients[i].pid, SIGRTMIN);
@@ -164,7 +180,7 @@ void do_2_friends(int clientId, char msg[MESSAGE_SIZE]) {
     fread(date, sizeof(char), 64, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
-    for (int i = 0; i < clients[clientId].numberOfFriends; i++) {
+    int i=0;for (; i < clients[clientId].numberOfFriends; i++) {
         int to = clients[clientId].friends[i];
         if (canSendTo(to)) {
             printf("%i\t", to);
@@ -197,7 +213,7 @@ void add_friends(int clientId, char list[MESSAGE_SIZE]) {
 
     while (elem != NULL && clients[clientId].numberOfFriends < MAX_NUMBER_OF_CLIENTS) {
         int id = (int) strtol(elem, NULL, 10);
-        for (int i = 0; i < clients[clientId].numberOfFriends; i++)
+        int i=0;for (; i < clients[clientId].numberOfFriends; i++)
             if (id == clients[clientId].friends[i])id = -1;
         if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
             clients[clientId].friends[clients[clientId].numberOfFriends] = id;

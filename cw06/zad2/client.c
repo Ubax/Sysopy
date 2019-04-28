@@ -6,17 +6,11 @@
 #include "communication.h"
 #include "argsProcessor.h"
 
-enum INPUT_TYPE {
-    FROM_FILE,
-    FROM_TERMINAL
-};
-
-enum INPUT_TYPE input_type = FROM_TERMINAL;
-char fileName[FILENAME_MAX];
 int serverQueueId = -1;
 int running = 1;
 int clientQueueId = -1;
 int clientId = -1;
+char* queueName;
 
 int send(enum COMMAND type, char text[MESSAGE_SIZE]);
 
@@ -62,16 +56,15 @@ void do_list() {
 void do_stop() {
     running = 0;
     send(STOP, "");
+    if (mq_close(serverQueueId) == -1) ERROR_EXIT("Closing server queue");
 }
 
 void do_init() {
     struct MESSAGE msg;
-    char text[MESSAGE_SIZE];
     msg.mType = INIT;
-    sprintf(text, "%i", clientQueueId);
-    strcpy(msg.message, text);
+    strcpy(msg.message, queueName);
     msg.senderId = getpid();
-    if (msgsnd(serverQueueId, &msg, MSGSZ, IPC_NOWAIT)) ERROR_EXIT("Sending");
+    if (mq_send(serverQueueId, (char *) &msg, MESSAGE_SIZE, commandPiority(INIT))) ERROR_EXIT("Sending");
     receive(&msg);
     if (msg.mType != INIT) MESSAGE_EXIT("Wrong response type");
     sscanf(msg.message, "%i", &clientId);
@@ -88,7 +81,7 @@ void do_add(char args[MAX_COMMAND_LENGTH]) {
     char command[MAX_COMMAND_LENGTH], list[MESSAGE_SIZE];
     int numberOfArguments = sscanf(args, "%s %s", command, list);
     if (numberOfArguments == EOF || numberOfArguments == 0) MESSAGE_EXIT("Error in sscanf\n");
-    if(numberOfArguments==1){
+    if (numberOfArguments == 1) {
         printf("ADD expects one argument");
         return;
     }
@@ -99,7 +92,7 @@ void do_del(char args[MAX_COMMAND_LENGTH]) {
     char command[MAX_COMMAND_LENGTH], list[MESSAGE_SIZE];
     int numberOfArguments = sscanf(args, "%s %s", command, list);
     if (numberOfArguments == EOF || numberOfArguments == 0) MESSAGE_EXIT("Error in sscanf\n");
-    if(numberOfArguments==1){
+    if (numberOfArguments == 1) {
         printf("DEL expects one argument");
         return;
     }
@@ -155,7 +148,9 @@ int runCommand(FILE *file) {
 }
 
 void cleanExit() {
-    if (msgctl(clientQueueId, IPC_RMID, NULL) == -1) ERROR_EXIT("Deleting queue");
+    if (mq_close(clientQueueId) == -1) ERROR_EXIT("Closing client queue");
+    if (mq_unlink(SERVER_QUEUE_NAME) == -1) ERROR_EXIT("Deleting queue");
+    free(queueName);
     exit(0);
 }
 
@@ -182,8 +177,13 @@ void notifySignal(int signalno) {
 int main(int argc, char **argv) {
     signal(SIGRTMIN, notifySignal);
     signal(SIGINT, exitSignal);
-    if ((serverQueueId = msgget(getServerQueueKey(), 0)) == -1) ERROR_EXIT("Opening queue");
-    if ((clientQueueId = msgget(getClientQueueKey(), IPC_CREAT | IPC_EXCL | 0666)) == -1) ERROR_EXIT(
+    queueName=getClientQueueName();
+    if ((serverQueueId = mq_open(SERVER_QUEUE_NAME, O_WRONLY)) == -1) ERROR_EXIT(
+            "Creating queue");
+    struct mq_attr queue_attr;
+    queue_attr.mq_maxmsg = MAX_QUEUE_SIZE;
+    queue_attr.mq_msgsize = MESSAGE_SIZE;
+    if ((clientQueueId = mq_open(queueName, O_RDONLY | O_CREAT | O_EXCL, 0666, &queue_attr)) == -1) ERROR_EXIT(
             "Opening client queue");
     do_init();
     while (running) {
@@ -198,11 +198,11 @@ int send(enum COMMAND type, char text[MESSAGE_SIZE]) {
     msg.mType = type;
     strcpy(msg.message, text);
     msg.senderId = clientId;
-    if (msgsnd(serverQueueId, &msg, MSGSZ, IPC_NOWAIT) == -1) ERROR_EXIT("Sending");
+    if (mq_send(serverQueueId, (char *) &msg, MESSAGE_SIZE, commandPiority(type)) == -1) ERROR_EXIT("Sending");
     return 0;
 }
 
 int receive(struct MESSAGE *msg) {
-    if (msgrcv(clientQueueId, msg, MSGSZ, -(MAX_COMMAND_ID + 1), 0) == -1) ERROR_EXIT("Receiving response");
+    if (mq_receive(clientQueueId, (char *) msg, MESSAGE_SIZE, NULL) == -1) ERROR_EXIT("Receiving response");
     return 0;
 }

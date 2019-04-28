@@ -11,13 +11,6 @@
 #include "communication.h"
 #include "argsProcessor.h"
 
-enum INPUT_TYPE {
-    FROM_FILE,
-    FROM_TERMINAL
-};
-
-enum INPUT_TYPE input_type = FROM_TERMINAL;
-char fileName[FILENAME_MAX];
 int serverQueueId = -1;
 int running = 1;
 int clientQueueId = -1;

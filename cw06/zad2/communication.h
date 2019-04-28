@@ -16,11 +16,10 @@
 #define MESSAGE_SIZE 2048
 #define MAX_COMMAND_LENGTH MESSAGE_SIZE
 #define MAX_COMMAND_ID 15
-#define KEY_LETTER 'a'
 #define MAX_NUMBER_OF_CLIENTS 20
 #define LIST_DELIMITER ";"
-#define MAX_QUEUE_SIZE 100
-#define SERVER_QUEUE_NAME "serverQueue"
+#define MAX_QUEUE_SIZE 9
+#define SERVER_QUEUE_NAME "/serverQueue"
 
 struct MESSAGE {
     long mType;
@@ -42,21 +41,26 @@ enum COMMAND {
     _2ALL,
 };
 
-
-key_t getServerQueueKey() {
-    char *homeDir = getenv("HOME");
-    if (homeDir == NULL) MESSAGE_EXIT("No home environment variable");
-    key_t key = ftok(homeDir, KEY_LETTER);
-    if (key == -1) ERROR_EXIT("Generating key");
-    return key;
+unsigned commandPiority(enum COMMAND cmd){
+    switch(cmd){
+        case STOP:
+            return 1;
+        case INIT:
+            return 2;
+        case FRIENDS:
+        case ADD:
+        case DEL:
+        case LIST:
+            return 3;
+        default:
+            return 4;
+    }
 }
 
-key_t getClientQueueKey() {
-    char *homeDir = getenv("HOME");
-    if (homeDir == NULL) MESSAGE_EXIT("No home environment variable");
-    key_t key = ftok(homeDir, getpid());
-    if (key == -1) ERROR_EXIT("Generating key");
-    return key;
+char* getClientQueueName() {
+    char *name=malloc(32*sizeof(char));
+    sprintf(name, "/cli%i%i", getpid(), rand()%1000);
+    return name;
 }
 
 #define MSGSZ sizeof(struct MESSAGE) //msgsz doesn't contain mType

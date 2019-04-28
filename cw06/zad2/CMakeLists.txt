@@ -9,4 +9,9 @@ add_executable(server server.c)
 
 add_executable(client client.c)
 target_link_libraries(client libArgsProcessor)
+find_library(LIBRT rt)
+if(LIBRT)
+    target_link_libraries(server ${LIBRT})
+    target_link_libraries(client ${LIBRT})
+endif()
 

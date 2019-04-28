@@ -53,7 +53,8 @@ void exitSignal(int signalno) {
 
 int main() {
     signal(SIGINT, exitSignal);
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i = 0;
+    for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         clients[i].queueId = -1;
         clients[i].numberOfFriends = 0;
     }
@@ -97,7 +98,8 @@ void do_stop(int clientId) {
     printf("Stopping...\n");
     if (clientId >= 0)clients[clientId].queueId = -1;
 
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i = 0;
+    for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (clients[i].queueId >= 0) {
             send(i, STOP, "");
             kill(clients[i].pid, SIGRTMIN);
@@ -132,7 +134,8 @@ void do_list(int clientId) {
     printf("Sending list to %i...\n", clientId);
     char response[MESSAGE_SIZE], buf[MESSAGE_SIZE];
     strcpy(response, "");
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i = 0;
+    for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (clients[i].queueId >= 0) {
             sprintf(buf, "Id: %i\tQueueID: %i\n", i, clients[i].queueId);
             strcat(response, buf);
@@ -149,7 +152,8 @@ void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
     fread(date, sizeof(char), 64, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
-    for (int i = 0; i < MAX_NUMBER_OF_CLIENTS; i++) {
+    int i = 0;
+    for (; i < MAX_NUMBER_OF_CLIENTS; i++) {
         if (i != clientId && clients[i].queueId != -1) {
             send(i, _2ALL, response);
             kill(clients[i].pid, SIGRTMIN);
@@ -165,7 +169,8 @@ void do_2_friends(int clientId, char msg[MESSAGE_SIZE]) {
     fread(date, sizeof(char), 64, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
-    for (int i = 0; i < clients[clientId].numberOfFriends; i++) {
+    int i = 0;
+    for (; i < clients[clientId].numberOfFriends; i++) {
         int to = clients[clientId].friends[i];
         if (canSendTo(to)) {
             printf("%i\t", to);
@@ -198,7 +203,8 @@ void add_friends(int clientId, char list[MESSAGE_SIZE]) {
 
     while (elem != NULL && clients[clientId].numberOfFriends < MAX_NUMBER_OF_CLIENTS) {
         int id = (int) strtol(elem, NULL, 10);
-        for (int i = 0; i < clients[clientId].numberOfFriends; i++)
+        int i = 0;
+        for (; i < clients[clientId].numberOfFriends; i++)
             if (id == clients[clientId].friends[i])id = -1;
         if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
             clients[clientId].friends[clients[clientId].numberOfFriends] = id;
@@ -273,7 +279,7 @@ void do_del(int clientId, char msg[MESSAGE_SIZE]) {
             if (i >= (*numberOfFriends))id = -1;
             if (id < MAX_NUMBER_OF_CLIENTS && id >= 0 && id != clientId) {
                 printf("\t\t%i\n", clients[clientId].friends[i]);
-                clients[clientId].friends[i] = clients[clientId].friends[(*numberOfFriends)-1];
+                clients[clientId].friends[i] = clients[clientId].friends[(*numberOfFriends) - 1];
                 (*numberOfFriends)--;
             }
             elem = strtok(NULL, LIST_DELIMITER);
