@@ -61,7 +61,7 @@ int main() {
     if ((queueId = msgget(getServerQueueKey(), IPC_CREAT | IPC_EXCL | 0666)) == -1) ERROR_EXIT("Creating queue");
     struct MESSAGE msgbuf;
     while (running) {
-        if (msgrcv(queueId, &msgbuf, MSGSZ, 0, 0) == -1) ERROR_EXIT("Receiving");
+        if (msgrcv(queueId, &msgbuf, MSGSZ, -(MAX_COMMAND_ID + 1), 0) == -1) ERROR_EXIT("Receiving");
         processResponse(&msgbuf);
     }
     cleanExit(queueId);
@@ -86,9 +86,9 @@ void do_echo(int clientId, char msg[MESSAGE_SIZE]) {
     printf("Echo for %i...\n", clientId);
 
     char response[MESSAGE_SIZE];
-    char date[64];
+    char date[31];
     FILE *f = popen("date", "r");
-    fread(date, sizeof(char), 64, f);
+    fread(date, sizeof(char), 31, f);
     pclose(f);
     sprintf(response, "%s\t%s", msg, date);
     send(clientId, ECHO, response);
@@ -147,9 +147,9 @@ void do_list(int clientId) {
 void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
     printf("Sending message to all...\n");
     char response[MESSAGE_SIZE];
-    char date[64];
+    char date[31];
     FILE *f = popen("date", "r");
-    fread(date, sizeof(char), 64, f);
+    fread(date, sizeof(char), 31, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
     int i = 0;
@@ -164,9 +164,9 @@ void do_2_all(int clientId, char msg[MESSAGE_SIZE]) {
 void do_2_friends(int clientId, char msg[MESSAGE_SIZE]) {
     printf("Sending message to friends...\n");
     char response[MESSAGE_SIZE];
-    char date[64];
+    char date[31];
     FILE *f = popen("date", "r");
-    fread(date, sizeof(char), 64, f);
+    fread(date, sizeof(char), 31, f);
     pclose(f);
     sprintf(response, "%s\tID: %i\tDate: %s\n", msg, clientId, date);
     int i = 0;
@@ -185,10 +185,10 @@ void do_2_one(int clientId, char msg[MESSAGE_SIZE]) {
     printf("Sending message to one...\n");
     char text[MESSAGE_SIZE];
     char response[MESSAGE_SIZE];
-    char date[64];
     int to;
+    char date[31];
     FILE *f = popen("date", "r");
-    fread(date, sizeof(char), 64, f);
+    fread(date, sizeof(char), 31, f);
     pclose(f);
     sscanf(msg, "%i %s", &to, text);
     sprintf(response, "%s\tID: %i\tDate: %s\n", text, clientId, date);
