@@ -4,6 +4,7 @@
 void init();
 void createConveyorBelt();
 void cleanExit();
+void signalHandler(int signo);
 
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
@@ -12,14 +13,20 @@ int semaphoreId = -2;
 struct ConveyorBeltQueue *conveyorBelt;
 
 int main(int argc, char **argv) {
-  if (atexit(cleanExit) == -1)
-    MESSAGE_EXIT("Registering atexit failed");
+  signal(SIGINT, signalHandler);
+  if (argc < 4)
+    MESSAGE_EXIT(
+        "Program expects at last 3 argument: "
+        "truck_max_load\tmax_number_of_loads\tmax_summed_weight_of_load");
   truckMaxLoad = getArgAsInt(argv, 1);
   maxNumberOfLoads = getArgAsInt(argv, 2);
   maxSummedWeightOfLoad = getArgAsInt(argv, 3);
   if (maxNumberOfLoads > MAX_QUEUE_SIZE)
     MESSAGE_EXIT("Too big conveyor belt");
   init();
+  while (1) {
+    sleep(1);
+  }
   return 0;
 }
 
@@ -27,6 +34,8 @@ void init() {
   occupiedSpace = 0;
   createConveyorBelt();
   initConveyorBeltQueue(conveyorBelt);
+  if (atexit(cleanExit) == -1)
+    MESSAGE_EXIT("Registering atexit failed");
 }
 
 void createConveyorBelt() {
@@ -59,5 +68,12 @@ void cleanExit() {
   }
   if (semaphoreId >= 0) {
     semctl(semaphoreId, 0, IPC_RMID);
+  }
+}
+
+void signalHandler(int signo) {
+  if (signo == SIGINT) {
+    printf("You killed me :'(\n");
+    exit(0);
   }
 }

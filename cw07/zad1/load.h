@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <signal.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
