@@ -1,11 +1,18 @@
 #include "load.h"
 #include "sysopy.h"
 
+#define INFO(msg, ...)                                                         \
+  {                                                                            \
+    printf("[%f] ", getCurrentTime());                                         \
+    printf(msg, ##__VA_ARGS__);                                                \
+  }
+
 void init();
 void createConveyorBelt();
 void cleanExit();
 void signalHandler(int signo);
 void emptyTruck();
+void getDataFromArgs(int argc, char **argv);
 
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
@@ -15,6 +22,32 @@ struct ConveyorBeltQueue *conveyorBelt;
 
 int main(int argc, char **argv) {
   signal(SIGINT, signalHandler);
+  getDataFromArgs(argc, argv);
+  init();
+  while (1) {
+    if (!isEmpty(conveyorBelt)) {
+      struct Load ret = pop(conveyorBelt);
+      if (ret.weight > truckMaxLoad - occupiedSpace) {
+        INFO("Truck is full\n");
+        emptyTruck();
+      }
+      occupiedSpace += ret.weight;
+      INFO("Taken from belt. LoaderId: %i\n"
+           "\tOccupied space in truck: %i\n"
+           "\tPackage weight: %i\t"
+           "\tDiff time: %f\n",
+           ret.loaderId, occupiedSpace, ret.weight,
+           (getCurrentTime() - ret.timeOfAttempt));
+      releaseConvSem(semaphoreId, ret.weight);
+    } else {
+      INFO("Waiting for package\n");
+    }
+    sleep(1);
+  }
+  return 0;
+}
+
+void getDataFromArgs(int argc, char **argv) {
   if (argc < 4)
     MESSAGE_EXIT(
         "Program expects at last 3 argument: "
@@ -24,25 +57,6 @@ int main(int argc, char **argv) {
   maxSummedWeightOfLoad = getArgAsInt(argv, 3);
   if (maxNumberOfLoads > MAX_QUEUE_SIZE)
     MESSAGE_EXIT("Too big conveyor belt");
-  init();
-  while (1) {
-    if (!isEmpty(conveyorBelt)) {
-      struct Load ret = pop(conveyorBelt);
-      if (ret.weight > truckMaxLoad - occupiedSpace) {
-        emptyTruck();
-      }
-      occupiedSpace += ret.weight;
-      printf("loaderId: %i\toccupied space: %i\tpackage weight: %i\tdiff time: "
-             "%f\n",
-             ret.loaderId, occupiedSpace, ret.weight,
-             (getCurrentTime() - ret.timeOfAttempt));
-      releaseConvSem(semaphoreId, ret.weight);
-    } else {
-      printf("Waiting for package\n");
-      sleep(1);
-    }
-  }
-  return 0;
 }
 
 void init() {
@@ -70,11 +84,9 @@ void createConveyorBelt() {
   if (semaphoreId == -1)
     ERROR_EXIT("Creating semaphore");
 
-  semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, SETVAL, maxNumberOfLoads);
-  printf("%i\n", maxSummedWeightOfLoad);
-  semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_LOAD, SETVAL,
-         maxSummedWeightOfLoad);
-  semctl(semaphoreId, CONVEYOR_BELT_SEM_SET, SETVAL, 1);
+  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, maxNumberOfLoads);
+  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_MAX_LOAD, maxSummedWeightOfLoad);
+  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_SET, 1);
 }
 
 void cleanExit() {
@@ -96,6 +108,6 @@ void signalHandler(int signo) {
 }
 
 void emptyTruck() {
-  printf("New truck came\n");
+  INFO("New truck came\n");
   occupiedSpace = 0;
 }

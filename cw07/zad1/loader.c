@@ -1,6 +1,12 @@
 #include "load.h"
 #include "sysopy.h"
 
+#define INFO(msg, ...)                                                         \
+  {                                                                            \
+    printf("[%f :: %i] ", getCurrentTime(), getpid());                         \
+    printf(msg, ##__VA_ARGS__);                                                \
+  }
+
 void init();
 void createConveyorBelt();
 void cleanExit();
@@ -22,20 +28,17 @@ int main(int argc, char **argv) {
   init();
   while (numberOfCycles > 0 || numberOfCycles == -2) {
     double attempt = getCurrentTime();
-    // printf("Trying to get semaphores\n");
     takeConvSem(semaphoreId, packageLoad);
-    // printf("Got conv semaphore\n");
     takeSetSem(semaphoreId);
-    // printf("Got set semaphore\n");
     push(conveyorBelt, (struct Load){packageLoad, getpid(), attempt});
-    printf("[%f] Placed load on belt. Weight: %i\tPid: %i\n", getCurrentTime(),
-           packageLoad, getpid());
+    INFO("Placed load on belt. Weight: %i\tFree weigth: %i\tFree space: %i\n",
+         packageLoad, getSemState(semaphoreId, CONVEYOR_BELT_SEM_MAX_LOAD),
+         getSemState(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM));
     releaseSetSem(semaphoreId);
-    // printf("Released semaphores\n");
     if (numberOfCycles != -2)
       numberOfCycles--;
   }
-  printf("Finished\n");
+  INFO("All work done for today. I'm going home")
   return 0;
 }
 

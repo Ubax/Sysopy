@@ -1,6 +1,18 @@
 #include "load.h"
 #include "sysopy.h"
 
+int getSemState(int semid, int semnum) {
+  int ret = semctl(semid, semnum, GETVAL, 0);
+  if (ret == -1)
+    ERROR_EXIT("Getting semaphore value");
+  return ret;
+}
+
+void setSemValue(int semid, int semnum, int value) {
+  if (semctl(semid, semnum, SETVAL, value) == -1)
+    ERROR_EXIT("Setting semaphore value");
+}
+
 void takeSetSem(int semid) {
   struct sembuf buf;
   buf.sem_num = CONVEYOR_BELT_SEM_SET;

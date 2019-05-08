@@ -48,5 +48,7 @@ void takeSetSem(int semid);
 void releaseSetSem(int semid);
 void takeConvSem(int semid, int weight);
 void releaseConvSem(int semid, int weight);
+int getSemState(int semid, int semnum);
+void setSemValue(int semid, int semnum, int value);
 
 #endif
