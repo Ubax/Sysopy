@@ -1,6 +1,49 @@
 #include "load.h"
 #include "sysopy.h"
 
+void takeSetSem(int semid) {
+  struct sembuf buf;
+  buf.sem_num = CONVEYOR_BELT_SEM_SET;
+  buf.sem_op = -1;
+  buf.sem_flg = 0;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Taking set semaphore");
+}
+void releaseSetSem(int semid) {
+  struct sembuf buf;
+  buf.sem_num = CONVEYOR_BELT_SEM_SET;
+  buf.sem_op = 1;
+  buf.sem_flg = 0;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Releasing set semaphore");
+}
+
+void takeConvSem(int semid, int weight) {
+  struct sembuf buf;
+  buf.sem_num = CONVEYOR_BELT_SEM_MAX_ELEM;
+  buf.sem_op = -1;
+  buf.sem_flg = 0;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Taking conveyor elem semaphore");
+  buf.sem_num = CONVEYOR_BELT_SEM_MAX_LOAD;
+  buf.sem_op = -weight;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Taking conveyor weight semaphore");
+}
+
+void releaseConvSem(int semid, int weight) {
+  struct sembuf buf;
+  buf.sem_num = CONVEYOR_BELT_SEM_MAX_ELEM;
+  buf.sem_op = 1;
+  buf.sem_flg = 0;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Releasing conveyor elem semaphore");
+  buf.sem_num = CONVEYOR_BELT_SEM_MAX_LOAD;
+  buf.sem_op = weight;
+  if (semop(semid, &buf, 1) == -1)
+    ERROR_EXIT("Releasing conveyor weight semaphore");
+}
+
 /******
 RETURN VALUE: oldIndex
 ******/

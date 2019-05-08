@@ -20,10 +20,20 @@ int main(int argc, char **argv) {
   if (argc > 2)
     numberOfCycles = getArgAsInt(argv, 2);
   init();
+  while (numberOfCycles > 0 || numberOfCycles == -2) {
+    takeSetSem(semaphoreId);
+    printf("Got set semaphore\n");
+    push(conveyorBelt, (struct Load){10, getpid()});
+    releaseSetSem(semaphoreId);
+    printf("Released set semaphore\n");
+    if (numberOfCycles != -2)
+      numberOfCycles--;
+  }
   return 0;
 }
 
 void init() {
+  printf("------------\n| PID: %i\n------------\n", getpid());
   createConveyorBelt();
   if (atexit(cleanExit) == -1)
     MESSAGE_EXIT("Registering atexit failed");
@@ -46,7 +56,4 @@ void createConveyorBelt() {
     ERROR_EXIT("Creating semaphore");
 }
 
-void cleanExit() {
-  clear(conveyorBelt);
-  shmdt(conveyorBelt);
-}
+void cleanExit() { shmdt(conveyorBelt); }

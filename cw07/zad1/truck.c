@@ -5,6 +5,7 @@ void init();
 void createConveyorBelt();
 void cleanExit();
 void signalHandler(int signo);
+void emptyTruck();
 
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
@@ -25,17 +26,28 @@ int main(int argc, char **argv) {
     MESSAGE_EXIT("Too big conveyor belt");
   init();
   while (1) {
-    sleep(1);
+    if (!isEmpty(conveyorBelt)) {
+      struct Load ret = pop(conveyorBelt);
+      if (ret.weight > truckMaxLoad - occupiedSpace) {
+        emptyTruck();
+      }
+      occupiedSpace += ret.weight;
+      printf("loaderId: %i\toccupied space: %i\tpackage weight: %i\n",
+             ret.loaderId, occupiedSpace, ret.weight);
+    } else {
+      printf("Waiting for package\n");
+      sleep(1);
+    }
   }
   return 0;
 }
 
 void init() {
-  occupiedSpace = 0;
   createConveyorBelt();
   initConveyorBeltQueue(conveyorBelt);
   if (atexit(cleanExit) == -1)
     MESSAGE_EXIT("Registering atexit failed");
+  emptyTruck();
 }
 
 void createConveyorBelt() {
@@ -51,13 +63,14 @@ void createConveyorBelt() {
   if (conveyorBelt == (void *)(-1))
     ERROR_EXIT("Attaching memory");
 
-  semaphoreId = semget(key, 2, IPC_CREAT | IPC_EXCL | 0666);
+  semaphoreId = semget(key, 3, IPC_CREAT | IPC_EXCL | 0666);
   if (semaphoreId == -1)
     ERROR_EXIT("Creating semaphore");
 
   semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, SETVAL, maxNumberOfLoads);
   semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_LOAD, SETVAL,
          maxSummedWeightOfLoad);
+  semctl(semaphoreId, CONVEYOR_BELT_SEM_SET, SETVAL, 1);
 }
 
 void cleanExit() {
@@ -76,4 +89,9 @@ void signalHandler(int signo) {
     printf("You killed me :'(\n");
     exit(0);
   }
+}
+
+void emptyTruck() {
+  printf("New truck came\n");
+  occupiedSpace = 0;
 }
