@@ -1,0 +1,7 @@
+ls -al . | grep file | cat
+echo "Test to jest" | grep Test | cat
+date | cat
+
+./cw05 | cat
+ ls -l | tail -n +3 | sort | grep 18 | grep c | grep tx
+ ls -l | tail -n +3 | sort | grep 18 | grep c 
