@@ -21,19 +21,26 @@ int main(int argc, char **argv) {
     numberOfCycles = getArgAsInt(argv, 2);
   init();
   while (numberOfCycles > 0 || numberOfCycles == -2) {
+    double attempt = getCurrentTime();
+    // printf("Trying to get semaphores\n");
+    takeConvSem(semaphoreId, packageLoad);
+    // printf("Got conv semaphore\n");
     takeSetSem(semaphoreId);
-    printf("Got set semaphore\n");
-    push(conveyorBelt, (struct Load){10, getpid()});
+    // printf("Got set semaphore\n");
+    push(conveyorBelt, (struct Load){packageLoad, getpid(), attempt});
+    printf("[%f] Placed load on belt. Weight: %i\tPid: %i\n", getCurrentTime(),
+           packageLoad, getpid());
     releaseSetSem(semaphoreId);
-    printf("Released set semaphore\n");
+    // printf("Released semaphores\n");
     if (numberOfCycles != -2)
       numberOfCycles--;
   }
+  printf("Finished\n");
   return 0;
 }
 
 void init() {
-  printf("------------\n| PID: %i\n------------\n", getpid());
+  // printf("------------\n| PID: %i\n------------\n", getpid());
   createConveyorBelt();
   if (atexit(cleanExit) == -1)
     MESSAGE_EXIT("Registering atexit failed");

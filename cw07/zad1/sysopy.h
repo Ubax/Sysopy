@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #ifndef SYSOPY_H
@@ -24,5 +25,6 @@ int compare(char *template, const char *value);
 int getArgAsInt(char **argv, int id);
 size_t getArgAsSizeT(char **argv, int id);
 void toUpper(char *str);
+double getCurrentTime();
 
 #endif // SYSOPY_H

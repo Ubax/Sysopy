@@ -8,9 +8,11 @@ add_library(load load.c)
 
 add_executable(truck truck.c)
 add_executable(loader loader.c)
+add_executable(init init.c)
 
 target_link_libraries(truck sysopy)
 target_link_libraries(loader sysopy)
+target_link_libraries(init sysopy)
 target_link_libraries(truck load)
 target_link_libraries(loader load)
 # find_library(LIBRT rt)

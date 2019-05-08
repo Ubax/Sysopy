@@ -4,7 +4,9 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef LOAD_H
@@ -18,13 +20,14 @@
   ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_FTOK_PROJECT_NUM);
 #define CONVEYOR_BELT_SEM_MAX_ELEM 0
 #define CONVEYOR_BELT_SEM_MAX_LOAD 1
-#define CONVEYOR_BELT_SEM_SET 1
+#define CONVEYOR_BELT_SEM_SET 2
 
 typedef pid_t LoaderId;
 
 struct Load {
   int weight;
   LoaderId loaderId;
+  double timeOfAttempt;
 };
 
 struct ConveyorBeltQueue {

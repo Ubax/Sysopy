@@ -32,8 +32,11 @@ int main(int argc, char **argv) {
         emptyTruck();
       }
       occupiedSpace += ret.weight;
-      printf("loaderId: %i\toccupied space: %i\tpackage weight: %i\n",
-             ret.loaderId, occupiedSpace, ret.weight);
+      printf("loaderId: %i\toccupied space: %i\tpackage weight: %i\tdiff time: "
+             "%f\n",
+             ret.loaderId, occupiedSpace, ret.weight,
+             (getCurrentTime() - ret.timeOfAttempt));
+      releaseConvSem(semaphoreId, ret.weight);
     } else {
       printf("Waiting for package\n");
       sleep(1);
@@ -68,6 +71,7 @@ void createConveyorBelt() {
     ERROR_EXIT("Creating semaphore");
 
   semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, SETVAL, maxNumberOfLoads);
+  printf("%i\n", maxSummedWeightOfLoad);
   semctl(semaphoreId, CONVEYOR_BELT_SEM_MAX_LOAD, SETVAL,
          maxSummedWeightOfLoad);
   semctl(semaphoreId, CONVEYOR_BELT_SEM_SET, SETVAL, 1);

@@ -1,5 +1,11 @@
 #include "sysopy.h"
 
+double getCurrentTime() {
+  struct timeval currentTime;
+  gettimeofday(&currentTime, NULL);
+  return currentTime.tv_sec + currentTime.tv_usec * 1.0 / 1e6;
+}
+
 void toUpper(char *str) {
   size_t i = 0;
   for (; i < strlen(str); i++)
