@@ -48,7 +48,8 @@ struct Load pop(sem_t *sem_set, struct ConveyorBeltQueue *queue);
 int isEmpty(struct ConveyorBeltQueue *queue);
 int isFull(struct ConveyorBeltQueue *queue);
 void clear(struct ConveyorBeltQueue *queue);
-void takeSem(sem_t *sem_set);
+void takeSem(sem_t *sem_set, struct ConveyorBeltQueue *belt);
+int takeSemNonblock(sem_t *sem_set);
 void releaseSem(sem_t *sem_set);
 int getSemState(sem_t *semid);
 

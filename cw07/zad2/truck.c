@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     if (!isEmpty(conveyorBelt)) {
       struct Load ret = pop(semaphoreSet, conveyorBelt);
       if (ret.weight > truckMaxLoad - occupiedSpace) {
-        takeSem(semaphoreSet);
+        takeSem(semaphoreSet, conveyorBelt);
         INFO("Truck is full\n");
         releaseSem(semaphoreSet);
         emptyTruck();

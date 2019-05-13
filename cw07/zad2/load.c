@@ -8,10 +8,16 @@ int getSemState(sem_t *semid) {
   return ret;
 }
 
-void takeSem(sem_t *sem) {
-  if (sem_wait(sem) == -1)
-    ERROR_EXIT("Taking  semaphore");
+void takeSem(sem_t *sem, struct ConveyorBeltQueue *belt) {
+  while (!takeSemNonblock(sem)) {
+    if (!belt->truckExists)
+      exit(0);
+    if (errno != EAGAIN)
+      ERROR_EXIT("Taking  semaphore");
+  }
 }
+
+int takeSemNonblock(sem_t *sem) { return sem_trywait(sem) != -1; }
 
 void releaseSem(sem_t *sem) {
   if (sem_post(sem) == -1)
@@ -43,7 +49,7 @@ int push(sem_t *sem_set, struct ConveyorBeltQueue *queue, struct Load elem) {
     MESSAGE_EXIT("null queue");
   if (isFull(queue))
     MESSAGE_EXIT("full queue");
-  takeSem(sem_set);
+  takeSem(sem_set, queue);
   if (queue->maxWeight < queue->weight + elem.weight) {
     releaseSem(sem_set);
     return 0;
@@ -59,7 +65,7 @@ struct Load pop(sem_t *sem_set, struct ConveyorBeltQueue *queue) {
     MESSAGE_EXIT("null queue");
   if (isEmpty(queue))
     MESSAGE_EXIT("full queue");
-  takeSem(sem_set);
+  takeSem(sem_set, queue);
   queue->size--;
   struct Load ret = queue->array[incQueueIndex(queue, &queue->head)];
   queue->weight -= ret.weight;

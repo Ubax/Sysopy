@@ -35,10 +35,10 @@ int main(int argc, char **argv) {
   while ((numberOfCycles > 0 || numberOfCycles == -2) &&
          conveyorBelt->truckExists) {
     double attempt = getCurrentTime();
-    takeSem(semaphoreMaxElem);
+    takeSem(semaphoreMaxElem, conveyorBelt);
     cyc = 0;
     while (!done && conveyorBelt->truckExists && cyc < HUNGER_LEVEL) {
-      takeSem(semaphorePriority);
+      takeSem(semaphorePriority, conveyorBelt);
       if (push(semaphoreSet, conveyorBelt,
                (struct Load){packageLoad, getpid(), attempt})) {
         done = 1;
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
       cyc++;
     }
     if (!done) {
-      takeSem(semaphorePriority);
+      takeSem(semaphorePriority, conveyorBelt);
       waiting();
       while (!push(semaphoreSet, conveyorBelt,
                    (struct Load){packageLoad, getpid(), attempt}) &&
@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
     if (numberOfCycles != -2)
       numberOfCycles--;
   }
-  INFO("All work done for today. I'm going home")
   return 0;
 }
 
@@ -111,6 +110,7 @@ void createConveyorBelt() {
 }
 
 void cleanExit() {
+  INFO("All work done for today. I'm going home")
   munmap(conveyorBelt, sizeof(struct ConveyorBeltQueue));
 
   if (semaphoreMaxElem != NULL) {
