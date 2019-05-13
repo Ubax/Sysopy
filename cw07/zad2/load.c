@@ -1,33 +1,20 @@
 #include "load.h"
 #include "sysopy.h"
 
-int getSemState(int semid, int semnum) {
-  int ret = semctl(semid, semnum, GETVAL, 0);
-  if (ret == -1)
+int getSemState(sem_t *semid) {
+  int ret;
+  if (sem_getvalue(semid, &ret) == -1)
     ERROR_EXIT("Getting semaphore value");
   return ret;
 }
 
-void setSemValue(int semid, int semnum, int value) {
-  if (semctl(semid, semnum, SETVAL, value) == -1)
-    ERROR_EXIT("Setting semaphore value");
+void takeSem(sem_t *sem) {
+  if (sem_wait(sem) == -1)
+    ERROR_EXIT("Taking  semaphore");
 }
 
-void takeSem(int semid, int subId) {
-  struct sembuf buf;
-  buf.sem_num = subId;
-  buf.sem_op = -1;
-  buf.sem_flg = 0;
-  if (semop(semid, &buf, 1) == -1)
-    ERROR_EXIT("Taking semaphore");
-}
-
-void releaseSem(int semid, int subId) {
-  struct sembuf buf;
-  buf.sem_num = subId;
-  buf.sem_op = 1;
-  buf.sem_flg = 0;
-  if (semop(semid, &buf, 1) == -1)
+void releaseSem(sem_t *sem) {
+  if (sem_post(sem) == -1)
     ERROR_EXIT("Releasing semaphore");
 }
 
@@ -51,32 +38,32 @@ void initConveyorBeltQueue(struct ConveyorBeltQueue *queue) {
   queue->maxSize = MAX_QUEUE_SIZE;
   queue->size = 0;
 }
-int push(int semid, struct ConveyorBeltQueue *queue, struct Load elem) {
+int push(sem_t *sem_set, struct ConveyorBeltQueue *queue, struct Load elem) {
   if (queue == NULL || queue->maxSize == 0)
     MESSAGE_EXIT("null queue");
   if (isFull(queue))
     MESSAGE_EXIT("full queue");
-  takeSem(semid, CONVEYOR_BELT_SEM_SET);
+  takeSem(sem_set);
   if (queue->maxWeight < queue->weight + elem.weight) {
-    releaseSem(semid, CONVEYOR_BELT_SEM_SET);
+    releaseSem(sem_set);
     return 0;
   }
   queue->array[incQueueIndex(queue, &queue->tail)] = elem;
   queue->size++;
   queue->weight += elem.weight;
-  releaseSem(semid, CONVEYOR_BELT_SEM_SET);
+  releaseSem(sem_set);
   return 1;
 }
-struct Load pop(int semid, struct ConveyorBeltQueue *queue) {
+struct Load pop(sem_t *sem_set, struct ConveyorBeltQueue *queue) {
   if (queue == NULL || queue->size == 0)
     MESSAGE_EXIT("null queue");
   if (isEmpty(queue))
     MESSAGE_EXIT("full queue");
-  takeSem(semid, CONVEYOR_BELT_SEM_SET);
+  takeSem(sem_set);
   queue->size--;
   struct Load ret = queue->array[incQueueIndex(queue, &queue->head)];
   queue->weight -= ret.weight;
-  releaseSem(semid, CONVEYOR_BELT_SEM_SET);
+  releaseSem(sem_set);
   return ret;
 }
 int isEmpty(struct ConveyorBeltQueue *queue) { return queue->size == 0; }

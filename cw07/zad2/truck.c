@@ -17,7 +17,7 @@ void getDataFromArgs(int argc, char **argv);
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
 int sharedMemoryId = -2;
-int semaphoreId = -2;
+sem_t *semaphoreMaxElem = NULL, *semaphorePriority = NULL, *semaphoreSet = NULL;
 struct ConveyorBeltQueue *conveyorBelt;
 
 int main(int argc, char **argv) {
@@ -26,12 +26,12 @@ int main(int argc, char **argv) {
   init();
   while (1) {
     if (!isEmpty(conveyorBelt)) {
-      struct Load ret = pop(semaphoreId, conveyorBelt);
+      struct Load ret = pop(semaphoreSet, conveyorBelt);
       if (ret.weight > truckMaxLoad - occupiedSpace) {
-        takeSem(semaphoreId, CONVEYOR_BELT_SEM_SET);
+        takeSem(semaphoreSet);
         INFO("Truck is full\n");
+        releaseSem(semaphoreSet);
         emptyTruck();
-        releaseSem(semaphoreId, CONVEYOR_BELT_SEM_SET);
       }
       occupiedSpace += ret.weight;
       INFO("Taken from belt. LoaderId: %i\n"
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
            "\tDiff time: %f\n",
            ret.loaderId, occupiedSpace, ret.weight,
            (getCurrentTime() - ret.timeOfAttempt));
-      releaseSem(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM);
+      releaseSem(semaphoreMaxElem);
     } else {
       INFO("Waiting for package\n");
     }
@@ -71,38 +71,56 @@ void init() {
 }
 
 void createConveyorBelt() {
-  key_t key = CONVEYOR_BELT_FTOK;
-  if (key == -1)
-    ERROR_EXIT("Getting key");
-  sharedMemoryId = shmget(key, sizeof(struct ConveyorBeltQueue) + 10,
-                          IPC_CREAT | IPC_EXCL | 0666);
+  sharedMemoryId =
+      shm_open(CONVEYOR_BELT_MEM_PATH, O_CREAT | O_RDWR | O_EXCL, 0666);
   if (sharedMemoryId == -1)
     ERROR_EXIT("Creating shared memory");
+  if (ftruncate(sharedMemoryId, sizeof(struct ConveyorBeltQueue)))
+    ERROR_EXIT("Ftruncate");
 
-  conveyorBelt = shmat(sharedMemoryId, 0, 0);
+  conveyorBelt = mmap(NULL, sizeof(struct ConveyorBeltQueue),
+                      PROT_READ | PROT_WRITE, MAP_SHARED, sharedMemoryId, 0);
   if (conveyorBelt == (void *)(-1))
     ERROR_EXIT("Attaching memory");
   conveyorBelt->weight = 0;
   conveyorBelt->maxWeight = maxSummedWeightOfLoad;
 
-  semaphoreId = semget(key, 3, IPC_CREAT | IPC_EXCL | 0666);
-  if (semaphoreId == -1)
-    ERROR_EXIT("Creating semaphore");
+  semaphoreMaxElem =
+      sem_open(CONVEYOR_BELT_SEM_MAX_ELEM, O_CREAT | O_RDWR | O_EXCL, 0666,
+               maxNumberOfLoads);
+  if (semaphoreMaxElem == SEM_FAILED)
+    ERROR_EXIT("Creating semaphore max elem");
 
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, maxNumberOfLoads);
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_SET, 1);
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_PRIORITY, 1);
+  semaphorePriority =
+      sem_open(CONVEYOR_BELT_SEM_PRIORITY, O_CREAT | O_RDWR | O_EXCL, 0666,
+               maxSummedWeightOfLoad);
+  if (semaphorePriority == SEM_FAILED)
+    ERROR_EXIT("Creating semaphore priority");
+
+  semaphoreSet =
+      sem_open(CONVEYOR_BELT_SEM_SET, O_CREAT | O_RDWR | O_EXCL, 0666, 1);
+  if (semaphoreSet == SEM_FAILED)
+    ERROR_EXIT("Creating semaphore max elem");
 }
 
 void cleanExit() {
   conveyorBelt->truckExists = 0;
   clear(conveyorBelt);
-  shmdt(conveyorBelt);
+  munmap(conveyorBelt, sizeof(struct ConveyorBeltQueue));
   if (sharedMemoryId >= 0) {
-    shmctl(sharedMemoryId, IPC_RMID, NULL);
+    shm_unlink(CONVEYOR_BELT_MEM_PATH);
   }
-  if (semaphoreId >= 0) {
-    semctl(semaphoreId, 0, IPC_RMID);
+  if (semaphoreMaxElem != NULL) {
+    sem_close(semaphoreMaxElem);
+    sem_unlink(CONVEYOR_BELT_SEM_MAX_ELEM);
+  }
+  if (semaphorePriority != NULL) {
+    sem_close(semaphorePriority);
+    sem_unlink(CONVEYOR_BELT_SEM_PRIORITY);
+  }
+  if (semaphoreSet != NULL) {
+    sem_close(semaphoreSet);
+    sem_unlink(CONVEYOR_BELT_SEM_SET);
   }
 }
 

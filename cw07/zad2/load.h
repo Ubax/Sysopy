@@ -1,9 +1,11 @@
 #include "sysopy.h"
+#include <fcntl.h>
 #include <limits.h>
+#include <semaphore.h>
 #include <signal.h>
 #include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
@@ -14,13 +16,10 @@
 
 #define MAX_LOAD 100
 #define MAX_QUEUE_SIZE 100
-#define CONVEYOR_BELT_FTOK_PATH getenv("HOME")
-#define CONVEYOR_BELT_FTOK_PROJECT_NUM 1
-#define CONVEYOR_BELT_FTOK                                                     \
-  ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_FTOK_PROJECT_NUM);
-#define CONVEYOR_BELT_SEM_MAX_ELEM 0
-#define CONVEYOR_BELT_SEM_SET 1
-#define CONVEYOR_BELT_SEM_PRIORITY 2
+#define CONVEYOR_BELT_MEM_PATH "/conveyorbeltmem"
+#define CONVEYOR_BELT_SEM_MAX_ELEM "/conveyorbeltelem"
+#define CONVEYOR_BELT_SEM_PRIORITY "/conveyorbeltpriority"
+#define CONVEYOR_BELT_SEM_SET "/conveyorbeltset"
 
 #define HUNGER_LEVEL 10
 
@@ -44,14 +43,13 @@ struct ConveyorBeltQueue {
 };
 
 void initConveyorBeltQueue(struct ConveyorBeltQueue *queue);
-int push(int semid, struct ConveyorBeltQueue *queue, struct Load elem);
-struct Load pop(int semid, struct ConveyorBeltQueue *queue);
+int push(sem_t *sem_set, struct ConveyorBeltQueue *queue, struct Load elem);
+struct Load pop(sem_t *sem_set, struct ConveyorBeltQueue *queue);
 int isEmpty(struct ConveyorBeltQueue *queue);
 int isFull(struct ConveyorBeltQueue *queue);
 void clear(struct ConveyorBeltQueue *queue);
-void takeSem(int semid, int subId);
-void releaseSem(int semid, int subId);
-int getSemState(int semid, int semnum);
-void setSemValue(int semid, int semnum, int value);
+void takeSem(sem_t *sem_set);
+void releaseSem(sem_t *sem_set);
+int getSemState(sem_t *semid);
 
 #endif
