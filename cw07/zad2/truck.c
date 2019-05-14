@@ -37,14 +37,13 @@ int main(int argc, char **argv) {
       INFO("Taken from belt. LoaderId: %i\n"
            "\tOccupied space in truck: %i\n"
            "\tPackage weight: %i\t"
-           "\tDiff time: %f\n",
+           "\tDiff time: %f\tPlacement time: %f\n",
            ret.loaderId, occupiedSpace, ret.weight,
-           (getCurrentTime() - ret.timeOfAttempt));
+           (getCurrentTime() - ret.timeOfAttempt), ret.timeOfPlacement);
       releaseSem(semaphoreMaxElem);
     } else {
-      INFO("Waiting for package\n");
+      // INFO("Waiting for package\n");
     }
-    sleep(1);
   }
   return 0;
 }

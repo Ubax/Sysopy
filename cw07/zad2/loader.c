@@ -40,7 +40,8 @@ int main(int argc, char **argv) {
     while (!done && conveyorBelt->truckExists && cyc < HUNGER_LEVEL) {
       takeSem(semaphorePriority, conveyorBelt);
       if (push(semaphoreSet, conveyorBelt,
-               (struct Load){packageLoad, getpid(), attempt})) {
+               (struct Load){packageLoad, getpid(), attempt,
+                             getCurrentTime()})) {
         done = 1;
         placed();
       }
@@ -52,7 +53,8 @@ int main(int argc, char **argv) {
       takeSem(semaphorePriority, conveyorBelt);
       waiting();
       while (!push(semaphoreSet, conveyorBelt,
-                   (struct Load){packageLoad, getpid(), attempt}) &&
+                   (struct Load){packageLoad, getpid(), attempt,
+                                 getCurrentTime()}) &&
              conveyorBelt->truckExists) {
       }
       releaseSem(semaphorePriority);

@@ -29,6 +29,7 @@ struct Load {
   int weight;
   LoaderId loaderId;
   double timeOfAttempt;
+  double timeOfPlacement;
 };
 
 struct ConveyorBeltQueue {
