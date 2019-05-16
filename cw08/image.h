@@ -36,6 +36,4 @@ int _round(float x);
 int min(int a, int b);
 int max(int a, int b);
 
-void *blockFilter(void *);
-
 #endif

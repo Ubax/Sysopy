@@ -26,7 +26,7 @@ struct IMAGE createEmptyImage(int width, int height) {
   }
 
   for (i = 0; i < width; i++) {
-    retImage.data[i] = malloc(width * sizeof(int));
+    retImage.data[i] = malloc(height * sizeof(int));
     if (retImage.data[i] == NULL) {
       ERROR_EXIT("Allocating memory for image");
     }
@@ -40,7 +40,7 @@ struct IMAGE createEmptyImage(int width, int height) {
 
 struct IMAGE loadImage(char *fileName) {
   struct IMAGE retImage;
-  int width, height, maxColor;
+  int width = 0, height = 0, maxColor;
   int i, j;
   char bufor[255];
   FILE *file;
@@ -50,6 +50,10 @@ struct IMAGE loadImage(char *fileName) {
   if (strcmp(bufor, "P2") != 0)
     MESSAGE_EXIT("Wrong file header");
   fscanf(file, "%i %i %i", &width, &height, &maxColor);
+  if (width < 0 || height < 0) {
+    ERROR_EXIT("Size loading");
+  }
+  printf("Image size: %ix%i\n", width, height);
   retImage = createEmptyImage(width, height);
   for (i = 0; i < height; i++) {
     for (j = 0; j < width; j++) {

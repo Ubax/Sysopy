@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <unistd.h>
 
 #ifndef SYSOPY_H

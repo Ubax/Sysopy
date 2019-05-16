@@ -2,6 +2,8 @@
 #include "sysopy.h"
 
 void createThreads();
+void *blockFilter(void *);
+void *interleavedFilter(void *);
 
 int numberOfThreads = 0;
 enum MODE mode = BLOCK;
@@ -13,8 +15,10 @@ struct IMAGE inputImage, outputImage;
 struct FILTER filter;
 struct FILTER_ARGS *filterArgs;
 
+double **threadsTimes;
+
 int main(int argc, char **argv) {
-  int i, j;
+  int i;
   if (argc < 6) {
     MESSAGE_EXIT("Program expects 5 arguments: "
                  "number_of_threads\t"
@@ -33,6 +37,9 @@ int main(int argc, char **argv) {
   threads = malloc(sizeof(pthread_t) * numberOfThreads);
   if (threads == NULL)
     ERROR_EXIT("Allocating threads");
+  threadsTimes = malloc(sizeof(double *) * numberOfThreads);
+  if (threadsTimes == NULL)
+    ERROR_EXIT("Allocating threads times");
   filterArgs = malloc(sizeof(struct FILTER_ARGS) * numberOfThreads);
   if (filterArgs == NULL)
     ERROR_EXIT("Allocating args");
@@ -42,9 +49,20 @@ int main(int argc, char **argv) {
   inputImage = loadImage(inputFileName);
   outputImage = createEmptyImage(inputImage.width, inputImage.height);
 
+  double startTime;
+  double endTime;
+
+  startTime = getCurrentTime();
   createThreads();
+
   for (i = 0; i < numberOfThreads; i++) {
-    pthread_join(threads[i], NULL);
+    pthread_join(threads[i], (void **)&threadsTimes[i]);
+  }
+  endTime = getCurrentTime();
+
+  printf("Whole operation time:\t%lf\n", endTime - startTime);
+  for (i = 0; i < numberOfThreads; i++) {
+    printf("Thread %i time:\t\t%lf\n", i + 1, *threadsTimes[i]);
   }
 
   saveImage(outputFileName, &outputImage);
@@ -55,6 +73,13 @@ int main(int argc, char **argv) {
 void cleanExit() {
   if (threads != NULL)
     free(threads);
+  if (threadsTimes != NULL) {
+    int i = 0;
+    for (; i < numberOfThreads; i++)
+      free(threadsTimes[i]);
+    free(threadsTimes);
+  }
+
   if (filterArgs != NULL)
     free(filterArgs);
   clearImage(&inputImage);
@@ -70,7 +95,12 @@ void createThreads() {
     filterArgs[i].outputImage = &outputImage;
     filterArgs[i].filter = &filter;
     filterArgs[i].threadId = i;
-    pthread_create(&threads[i], NULL, blockFilter, &filterArgs[i]);
+    if (mode == BLOCK)
+      pthread_create(&threads[i], NULL, blockFilter, &filterArgs[i]);
+    else if (mode == INTERLEAVED)
+      pthread_create(&threads[i], NULL, interleavedFilter, &filterArgs[i]);
+    else
+      MESSAGE_EXIT("Unkonown mode");
   }
 }
 
@@ -85,7 +115,6 @@ void transformColumn(struct FILTER_ARGS *args, int columnId) {
       for (j = 0; j < c; j++) {
         mc = max(0, columnId - ceilDiv(c, 2) + i - 1);
         mr = max(0, y - ceilDiv(c, 2) + j - 1);
-        printf("%i %i\n", mr, mc);
         if (mc >= args->inputImage->width)
           printf("Too big col\n");
         if (mr >= args->inputImage->height)
@@ -93,11 +122,12 @@ void transformColumn(struct FILTER_ARGS *args, int columnId) {
         s += args->inputImage->data[mc][mr] * args->filter->data[i][j];
       }
     }
-    args->outputImage->data[columnId][y] = _round(s);
+    args->outputImage->data[columnId][y] = _round(s > 0 ? s : 0);
   }
 }
 
 void *blockFilter(void *args) {
+  double startTime = getCurrentTime();
   struct FILTER_ARGS *filterArgs = args;
   int i;
   int min = filterArgs->threadId * ceilDiv(filterArgs->outputImage->width,
@@ -113,5 +143,23 @@ void *blockFilter(void *args) {
     }
     transformColumn(filterArgs, i);
   }
-  return (void *)0;
+  double *time = malloc(sizeof(double));
+  *time = getCurrentTime() - startTime;
+  pthread_exit(time);
+}
+
+void *interleavedFilter(void *args) {
+  double startTime = getCurrentTime();
+  struct FILTER_ARGS *filterArgs = args;
+  int i;
+  for (i = filterArgs->threadId; i < filterArgs->inputImage->width;
+       i += filterArgs->numberOfThreads) {
+    if (i >= filterArgs->outputImage->width) {
+      printf("Too big\n");
+    }
+    transformColumn(filterArgs, i);
+  }
+  double *time = malloc(sizeof(double));
+  *time = getCurrentTime() - startTime;
+  pthread_exit(time);
 }
