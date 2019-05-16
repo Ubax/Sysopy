@@ -10,9 +10,11 @@ char *inputFileName, *outputFileName, *filterFileName;
 pthread_t *threads = NULL;
 
 struct IMAGE inputImage, outputImage;
+struct FILTER filter;
 struct FILTER_ARGS *filterArgs;
 
 int main(int argc, char **argv) {
+  int i, j;
   if (argc < 6) {
     MESSAGE_EXIT("Program expects 5 arguments: "
                  "number_of_threads\t"
@@ -35,12 +37,12 @@ int main(int argc, char **argv) {
   if (filterArgs == NULL)
     ERROR_EXIT("Allocating args");
 
+  filter = loadFilter(filterFileName);
+
   inputImage = loadImage(inputFileName);
   outputImage = createEmptyImage(inputImage.width, inputImage.height);
 
   createThreads();
-
-  int i;
   for (i = 0; i < numberOfThreads; i++) {
     pthread_join(threads[i], NULL);
   }
@@ -66,6 +68,7 @@ void createThreads() {
     filterArgs[i].numberOfThreads = numberOfThreads;
     filterArgs[i].inputImage = &inputImage;
     filterArgs[i].outputImage = &outputImage;
+    filterArgs[i].filter = &filter;
     filterArgs[i].threadId = i;
     pthread_create(&threads[i], NULL, blockFilter, &filterArgs[i]);
   }
@@ -74,14 +77,20 @@ void createThreads() {
 void transformColumn(struct FILTER_ARGS *args, int columnId) {
   int y, i, j;
   int c = args->filter->size;
-  double s;
+  int mc, mr;
+  float s;
   for (y = 0; y < args->inputImage->height; y++) {
     s = 0.0;
     for (i = 0; i < c; i++) {
       for (j = 0; j < c; j++) {
-        s += args->inputImage->data[max(1, columnId - ceilDiv(c, 2) + i)]
-                                   [max(1, y - ceilDiv(c, 2) + j)] *
-             args->filter->data[i][j];
+        mc = max(0, columnId - ceilDiv(c, 2) + i - 1);
+        mr = max(0, y - ceilDiv(c, 2) + j - 1);
+        printf("%i %i\n", mr, mc);
+        if (mc >= args->inputImage->width)
+          printf("Too big col\n");
+        if (mr >= args->inputImage->height)
+          printf("Too big row\n");
+        s += args->inputImage->data[mc][mr] * args->filter->data[i][j];
       }
     }
     args->outputImage->data[columnId][y] = _round(s);
@@ -95,8 +104,13 @@ void *blockFilter(void *args) {
                                            filterArgs->numberOfThreads);
   int max = (filterArgs->threadId + 1) * ceilDiv(filterArgs->outputImage->width,
                                                  filterArgs->numberOfThreads);
+  if (max > filterArgs->outputImage->width)
+    max = filterArgs->outputImage->width;
 
   for (i = min; i < max; i++) {
+    if (i >= filterArgs->outputImage->width) {
+      printf("Too big\n");
+    }
     transformColumn(filterArgs, i);
   }
   return (void *)0;

@@ -12,7 +12,7 @@ struct IMAGE {
 
 struct FILTER {
   int size;
-  int **data;
+  float **data;
 };
 
 struct FILTER_ARGS {
@@ -28,8 +28,11 @@ struct IMAGE loadImage(char *fileName);
 void saveImage(char *fileName, struct IMAGE *image);
 void clearImage(struct IMAGE *image);
 
+struct FILTER loadFilter(char *fileName);
+void clearFilter(struct FILTER *filter);
+
 int ceilDiv(int a, int b);
-int _round(double x);
+int _round(float x);
 int min(int a, int b);
 int max(int a, int b);
 
