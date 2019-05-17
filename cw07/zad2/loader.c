@@ -3,8 +3,10 @@
 
 #define INFO(msg, ...)                                                         \
   {                                                                            \
+    takeSem(semaphoreWrite);                                                   \
     printf("[%f :: %i] ", getCurrentTime(), getpid());                         \
     printf(msg, ##__VA_ARGS__);                                                \
+    releaseSem(semaphoreWrite);                                                \
   }
 
 void init();
@@ -15,12 +17,14 @@ void placed();
 
 int numberOfCycles = -2;
 int packageLoad = 0;
-int cyc = 0;
 int done = 0;
 
-sem_t *semaphoreMaxElem = NULL, *semaphorePriority = NULL, *semaphoreSet = NULL;
+sem_t *semaphoreMaxElem = NULL, *semaphoreSet = NULL, *semaphoreWrite = NULL,
+      *semaphoreOnBelt = NULL;
 int sharedMemoryId = -2;
 struct ConveyorBeltQueue *conveyorBelt;
+
+struct Load package;
 
 int main(int argc, char **argv) {
   if (argc < 2)
@@ -29,36 +33,31 @@ int main(int argc, char **argv) {
   packageLoad = getArgAsInt(argv, 1);
   if (argc > 2)
     numberOfCycles = getArgAsInt(argv, 2);
+
   init();
+
+  INFO("Init = Load: %i\tCycles: %i\n", packageLoad, numberOfCycles);
+
   if (conveyorBelt->maxWeight < packageLoad)
-    MESSAGE_EXIT("Package is too heavy for the belt");
+    MESSAGE_EXIT("Package is too heavy for the belt\n");
+
   while ((numberOfCycles > 0 || numberOfCycles == -2) &&
          conveyorBelt->truckExists) {
-    double attempt = getCurrentTime();
-    takeSem(semaphoreMaxElem, conveyorBelt);
-    cyc = 0;
-    while (!done && conveyorBelt->truckExists && cyc < HUNGER_LEVEL) {
-      takeSem(semaphorePriority, conveyorBelt);
-      if (push(semaphoreSet, conveyorBelt,
-               (struct Load){packageLoad, getpid(), attempt,
-                             getCurrentTime()})) {
+    package = (struct Load){packageLoad, getpid(), getCurrentTime(), 0};
+    while (!done && conveyorBelt->truckExists) {
+      takeSem(semaphoreSet);
+      if (canPush(conveyorBelt, package)) {
+        takeSem(semaphoreMaxElem);
+        package.timeOfPlacement = getCurrentTime();
+        push(conveyorBelt, package);
+        releaseSem(semaphoreOnBelt);
         done = 1;
         placed();
       }
-      releaseSem(semaphorePriority);
-      waiting();
-      cyc++;
-    }
-    if (!done) {
-      takeSem(semaphorePriority, conveyorBelt);
-      waiting();
-      while (!push(semaphoreSet, conveyorBelt,
-                   (struct Load){packageLoad, getpid(), attempt,
-                                 getCurrentTime()}) &&
-             conveyorBelt->truckExists) {
-      }
-      releaseSem(semaphorePriority);
-      placed();
+      if (!done)
+        waiting();
+      releaseSem(semaphoreSet);
+      usleep(2);
     }
     done = 0;
     if (numberOfCycles != -2)
@@ -68,7 +67,7 @@ int main(int argc, char **argv) {
 }
 
 void waiting() {
-  INFO("Waiting for belt to free\nFree weigth: %i\tFree space: %i\n",
+  INFO("Waiting for belt to free. Free weigth: %i\tFree space: %i\n",
        conveyorBelt->maxWeight - conveyorBelt->weight,
        getSemState(semaphoreMaxElem));
 }
@@ -102,24 +101,31 @@ void createConveyorBelt() {
   if (semaphoreMaxElem == SEM_FAILED)
     ERROR_EXIT("Creating semaphore max elem");
 
-  semaphorePriority = sem_open(CONVEYOR_BELT_SEM_PRIORITY, O_RDWR);
-  if (semaphorePriority == SEM_FAILED)
-    ERROR_EXIT("Creating semaphore max elem");
+  semaphoreWrite = sem_open(CONVEYOR_BELT_SEM_WRITE, O_RDWR);
+  if (semaphoreWrite == SEM_FAILED)
+    ERROR_EXIT("Creating semaphore write");
 
   semaphoreSet = sem_open(CONVEYOR_BELT_SEM_SET, O_RDWR);
   if (semaphoreSet == SEM_FAILED)
-    ERROR_EXIT("Creating semaphore max elem");
+    ERROR_EXIT("Creating semaphore set");
+
+  semaphoreOnBelt = sem_open(CONVEYOR_BELT_SEM_ON_BELT, O_RDWR);
+  if (semaphoreOnBelt == SEM_FAILED)
+    ERROR_EXIT("Creating semaphore on belt");
 }
 
 void cleanExit() {
-  INFO("All work done for today. I'm going home")
+  INFO("All work done for today. I'm going home\n")
   munmap(conveyorBelt, sizeof(struct ConveyorBeltQueue));
 
+  if (semaphoreOnBelt != NULL) {
+    sem_close(semaphoreOnBelt);
+  }
   if (semaphoreMaxElem != NULL) {
     sem_close(semaphoreMaxElem);
   }
-  if (semaphorePriority != NULL) {
-    sem_close(semaphorePriority);
+  if (semaphoreWrite != NULL) {
+    sem_close(semaphoreWrite);
   }
   if (semaphoreSet != NULL) {
     sem_close(semaphoreSet);

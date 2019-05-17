@@ -18,7 +18,8 @@
 #define MAX_QUEUE_SIZE 100
 #define CONVEYOR_BELT_MEM_PATH "/conveyorbeltmem"
 #define CONVEYOR_BELT_SEM_MAX_ELEM "/conveyorbeltelem"
-#define CONVEYOR_BELT_SEM_PRIORITY "/conveyorbeltpriority"
+#define CONVEYOR_BELT_SEM_WRITE "/conveyorbeltwrite"
+#define CONVEYOR_BELT_SEM_ON_BELT "/conveyorbeltonbelt"
 #define CONVEYOR_BELT_SEM_SET "/conveyorbeltset"
 
 #define HUNGER_LEVEL 10
@@ -44,12 +45,13 @@ struct ConveyorBeltQueue {
 };
 
 void initConveyorBeltQueue(struct ConveyorBeltQueue *queue);
-int push(sem_t *sem_set, struct ConveyorBeltQueue *queue, struct Load elem);
-struct Load pop(sem_t *sem_set, struct ConveyorBeltQueue *queue);
+int push(struct ConveyorBeltQueue *queue, struct Load elem);
+int canPush(struct ConveyorBeltQueue *queue, struct Load elem);
+struct Load pop(struct ConveyorBeltQueue *queue);
 int isEmpty(struct ConveyorBeltQueue *queue);
 int isFull(struct ConveyorBeltQueue *queue);
 void clear(struct ConveyorBeltQueue *queue);
-void takeSem(sem_t *sem_set, struct ConveyorBeltQueue *belt);
+void takeSem(sem_t *sem_set);
 int takeSemNonblock(sem_t *sem_set);
 void releaseSem(sem_t *sem_set);
 int getSemState(sem_t *semid);

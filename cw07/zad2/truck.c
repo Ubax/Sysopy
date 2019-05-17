@@ -17,7 +17,8 @@ void getDataFromArgs(int argc, char **argv);
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
 int sharedMemoryId = -2;
-sem_t *semaphoreMaxElem = NULL, *semaphorePriority = NULL, *semaphoreSet = NULL;
+sem_t *semaphoreMaxElem = NULL, *semaphoreSet = NULL, *semaphoreWrite = NULL,
+      *semaphoreOnBelt = NULL;
 struct ConveyorBeltQueue *conveyorBelt;
 
 int main(int argc, char **argv) {
@@ -25,25 +26,25 @@ int main(int argc, char **argv) {
   getDataFromArgs(argc, argv);
   init();
   while (1) {
-    if (!isEmpty(conveyorBelt)) {
-      struct Load ret = pop(semaphoreSet, conveyorBelt);
-      if (ret.weight > truckMaxLoad - occupiedSpace) {
-        takeSem(semaphoreSet, conveyorBelt);
-        INFO("Truck is full\n");
-        releaseSem(semaphoreSet);
-        emptyTruck();
-      }
-      occupiedSpace += ret.weight;
-      INFO("Taken from belt. LoaderId: %i\n"
-           "\tOccupied space in truck: %i\n"
-           "\tPackage weight: %i\t"
-           "\tDiff time: %f\tPlacement time: %f\n",
-           ret.loaderId, occupiedSpace, ret.weight,
-           (getCurrentTime() - ret.timeOfAttempt), ret.timeOfPlacement);
-      releaseSem(semaphoreMaxElem);
-    } else {
-      // INFO("Waiting for package\n");
+    if (isEmpty(conveyorBelt))
+      INFO("Waiting for package\n");
+    takeSem(semaphoreOnBelt);
+    takeSem(semaphoreSet);
+    struct Load ret = pop(conveyorBelt);
+    if (ret.weight > truckMaxLoad - occupiedSpace) {
+      INFO("Truck is full\n");
+
+      emptyTruck();
     }
+    occupiedSpace += ret.weight;
+    INFO("Taken from belt. LoaderId: %i\n"
+         "\tOccupied space in truck: %i\n"
+         "\tPackage weight: %i\t"
+         "\tDiff time: %f\tPlacement time: %f\n",
+         ret.loaderId, occupiedSpace, ret.weight,
+         (getCurrentTime() - ret.timeOfAttempt), ret.timeOfPlacement);
+    releaseSem(semaphoreMaxElem);
+    releaseSem(semaphoreSet);
   }
   return 0;
 }
@@ -58,6 +59,9 @@ void getDataFromArgs(int argc, char **argv) {
   maxSummedWeightOfLoad = getArgAsInt(argv, 3);
   if (maxNumberOfLoads > MAX_QUEUE_SIZE)
     MESSAGE_EXIT("Too big conveyor belt");
+  printf("Truck max load: %i\nBelt max number of elements: %i\nBelt max load: "
+         "%i\n",
+         truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad);
 }
 
 void init() {
@@ -90,11 +94,15 @@ void createConveyorBelt() {
   if (semaphoreMaxElem == SEM_FAILED)
     ERROR_EXIT("Creating semaphore max elem");
 
-  semaphorePriority =
-      sem_open(CONVEYOR_BELT_SEM_PRIORITY, O_CREAT | O_RDWR | O_EXCL, 0666,
-               maxSummedWeightOfLoad);
-  if (semaphorePriority == SEM_FAILED)
-    ERROR_EXIT("Creating semaphore priority");
+  semaphoreWrite =
+      sem_open(CONVEYOR_BELT_SEM_WRITE, O_CREAT | O_RDWR | O_EXCL, 0666, 1);
+  if (semaphoreWrite == SEM_FAILED)
+    ERROR_EXIT("Creating write semaphore");
+
+  semaphoreOnBelt =
+      sem_open(CONVEYOR_BELT_SEM_ON_BELT, O_CREAT | O_RDWR | O_EXCL, 0666, 0);
+  if (semaphoreOnBelt == SEM_FAILED)
+    ERROR_EXIT("Creating on belt semaphore");
 
   semaphoreSet =
       sem_open(CONVEYOR_BELT_SEM_SET, O_CREAT | O_RDWR | O_EXCL, 0666, 1);
@@ -113,9 +121,13 @@ void cleanExit() {
     sem_close(semaphoreMaxElem);
     sem_unlink(CONVEYOR_BELT_SEM_MAX_ELEM);
   }
-  if (semaphorePriority != NULL) {
-    sem_close(semaphorePriority);
-    sem_unlink(CONVEYOR_BELT_SEM_PRIORITY);
+  if (semaphoreOnBelt != NULL) {
+    sem_close(semaphoreOnBelt);
+    sem_unlink(CONVEYOR_BELT_SEM_ON_BELT);
+  }
+  if (semaphoreWrite != NULL) {
+    sem_close(semaphoreWrite);
+    sem_unlink(CONVEYOR_BELT_SEM_WRITE);
   }
   if (semaphoreSet != NULL) {
     sem_close(semaphoreSet);

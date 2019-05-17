@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   if (atexit(cleanExit) == -1)
     MESSAGE_EXIT("Registering atexit failed");
   signal(SIGINT, signalHandler);
-  if (argc < 5)
+  if (argc < 2)
     MESSAGE_EXIT("Program expects at last 1 argument: number_of_loaders\t");
   numberOfLoaders = getArgAsInt(argv, 1);
   if (numberOfLoaders >= MAX_NUM_OF_LOADERS)
@@ -28,9 +28,9 @@ int main(int argc, char **argv) {
     children[i] = fork();
     if (children[i] == 0) {
       if (strcmp(argv[2 + 2 * i], "0") == 0)
-        execl("./loader", "loader", argv[1 + 2 * i], NULL);
+        execl("./loader", "loader", argv[2 + 2 * i], NULL);
       else
-        execl("./loader", "loader", argv[1 + 2 * i], argv[2 + 2 * i], NULL);
+        execl("./loader", "loader", argv[2 + 2 * i], argv[3 + 2 * i], NULL);
     }
   }
 
