@@ -22,8 +22,6 @@
 #define CONVEYOR_BELT_SEM_ON_BELT "/conveyorbeltonbelt"
 #define CONVEYOR_BELT_SEM_SET "/conveyorbeltset"
 
-#define HUNGER_LEVEL 10
-
 typedef pid_t LoaderId;
 
 struct Load {

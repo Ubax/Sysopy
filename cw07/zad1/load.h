@@ -16,13 +16,12 @@
 #define MAX_QUEUE_SIZE 100
 #define CONVEYOR_BELT_FTOK_PATH getenv("HOME")
 #define CONVEYOR_BELT_FTOK_PROJECT_NUM 1
-#define CONVEYOR_BELT_FTOK                                                     \
-  ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_FTOK_PROJECT_NUM);
-#define CONVEYOR_BELT_SEM_MAX_ELEM 0
-#define CONVEYOR_BELT_SEM_SET 1
-#define CONVEYOR_BELT_SEM_PRIORITY 2
-
-#define HUNGER_LEVEL 10
+#define CONVEYOR_BELT_FTOK (x)                                                 \
+  ftok(CONVEYOR_BELT_FTOK_PATH, (x)));
+#define CONVEYOR_BELT_SEM_MAX_ELEM 2
+#define CONVEYOR_BELT_SEM_WRITE 3
+#define CONVEYOR_BELT_SEM_ON_BELT 4
+#define CONVEYOR_BELT_SEM_SET 5
 
 typedef pid_t LoaderId;
 
@@ -30,6 +29,7 @@ struct Load {
   int weight;
   LoaderId loaderId;
   double timeOfAttempt;
+  double timeOfPlacement;
 };
 
 struct ConveyorBeltQueue {
@@ -44,14 +44,15 @@ struct ConveyorBeltQueue {
 };
 
 void initConveyorBeltQueue(struct ConveyorBeltQueue *queue);
-int push(int semid, struct ConveyorBeltQueue *queue, struct Load elem);
-struct Load pop(int semid, struct ConveyorBeltQueue *queue);
+int push(struct ConveyorBeltQueue *queue, struct Load elem);
+struct Load pop(struct ConveyorBeltQueue *queue);
 int isEmpty(struct ConveyorBeltQueue *queue);
 int isFull(struct ConveyorBeltQueue *queue);
 void clear(struct ConveyorBeltQueue *queue);
-void takeSem(int semid, int subId);
-void releaseSem(int semid, int subId);
-int getSemState(int semid, int semnum);
-void setSemValue(int semid, int semnum, int value);
+void takeSem(int semid);
+void releaseSem(int semid);
+int getSemState(int semid);
+void setSemValue(int semid, int value);
+int canPush(struct ConveyorBeltQueue *queue, struct Load elem);
 
 #endif
