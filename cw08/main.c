@@ -112,13 +112,13 @@ void transformColumn(struct FILTER_ARGS *args, int columnId) {
   for (y = 0; y < args->inputImage->height; y++) {
     s = 0.0;
     for (i = 0; i < c; i++) {
+      mc = max(0, columnId - ceilDiv(c, 2) + i - 1);
+      if (mc >= args->inputImage->width)
+        mc = args->inputImage->width - 1;
       for (j = 0; j < c; j++) {
-        mc = max(0, columnId - ceilDiv(c, 2) + i - 1);
         mr = max(0, y - ceilDiv(c, 2) + j - 1);
-        if (mc >= args->inputImage->width)
-          printf("Too big col\n");
-        if (mr >= args->inputImage->height)
-          printf("Too big row\n");
+        if (mr >= args->inputImage->width)
+          mr = args->inputImage->height - 1;
         s += args->inputImage->data[mc][mr] * args->filter->data[i][j];
       }
     }
@@ -138,9 +138,6 @@ void *blockFilter(void *args) {
     max = filterArgs->outputImage->width;
 
   for (i = min; i < max; i++) {
-    if (i >= filterArgs->outputImage->width) {
-      printf("Too big\n");
-    }
     transformColumn(filterArgs, i);
   }
   double *time = malloc(sizeof(double));
@@ -154,9 +151,6 @@ void *interleavedFilter(void *args) {
   int i;
   for (i = filterArgs->threadId; i < filterArgs->inputImage->width;
        i += filterArgs->numberOfThreads) {
-    if (i >= filterArgs->outputImage->width) {
-      printf("Too big\n");
-    }
     transformColumn(filterArgs, i);
   }
   double *time = malloc(sizeof(double));
