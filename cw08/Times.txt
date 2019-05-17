@@ -1,4 +1,6 @@
 pią, 17 maj 2019, 14:27:17 CEST
+Number of aviable threads: 4
+
 Number of threads: 1		Mode: BLOCK
 Image size: 640x480		Filter size: 3
 |-----------------------------------|

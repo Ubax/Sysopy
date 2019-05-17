@@ -5,6 +5,7 @@ threads=(1 2 4 8)
 modes=(block interleaved)
 
 date > Times.txt
+echo "Number of aviable threads: 4" > Times.txt
 
 for filter in ${filters[*]}
 do
