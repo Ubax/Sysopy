@@ -53,7 +53,6 @@ struct IMAGE loadImage(char *fileName) {
   if (width < 0 || height < 0) {
     ERROR_EXIT("Size loading");
   }
-  printf("Image size: %ix%i\n", width, height);
   retImage = createEmptyImage(width, height);
   for (i = 0; i < height; i++) {
     for (j = 0; j < width; j++) {

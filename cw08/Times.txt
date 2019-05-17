@@ -1,0 +1,211 @@
+pią, 17 maj 2019, 14:27:17 CEST
+Number of threads: 1		Mode: BLOCK
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.049276 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.049049 |
+Number of threads: 1		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.050679 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.050470 |
+Number of threads: 2		Mode: BLOCK
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.027153 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.026900 |
+| Thread 2 time:	 | 0.026708 |
+Number of threads: 2		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.026637 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.026507 |
+| Thread 2 time:	 | 0.025844 |
+Number of threads: 4		Mode: BLOCK
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.015646 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.013309 |
+| Thread 2 time:	 | 0.013868 |
+| Thread 3 time:	 | 0.015441 |
+| Thread 4 time:	 | 0.013023 |
+Number of threads: 4		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.015392 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.015259 |
+| Thread 2 time:	 | 0.013115 |
+| Thread 3 time:	 | 0.014431 |
+| Thread 4 time:	 | 0.013009 |
+Number of threads: 8		Mode: BLOCK
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.015595 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.006724 |
+| Thread 2 time:	 | 0.013241 |
+| Thread 3 time:	 | 0.013980 |
+| Thread 4 time:	 | 0.009282 |
+| Thread 5 time:	 | 0.006436 |
+| Thread 6 time:	 | 0.006548 |
+| Thread 7 time:	 | 0.006904 |
+| Thread 8 time:	 | 0.007291 |
+Number of threads: 8		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 3
+|-----------------------------------|
+| Whole operation time:	 | 0.018069 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.006725 |
+| Thread 2 time:	 | 0.007493 |
+| Thread 3 time:	 | 0.007484 |
+| Thread 4 time:	 | 0.006727 |
+| Thread 5 time:	 | 0.006444 |
+| Thread 6 time:	 | 0.010350 |
+| Thread 7 time:	 | 0.006338 |
+| Thread 8 time:	 | 0.006434 |
+Number of threads: 1		Mode: BLOCK
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.393296 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.393076 |
+Number of threads: 1		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.390532 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.390323 |
+Number of threads: 2		Mode: BLOCK
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.209803 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.209313 |
+| Thread 2 time:	 | 0.209657 |
+Number of threads: 2		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.208889 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.208521 |
+| Thread 2 time:	 | 0.208736 |
+Number of threads: 4		Mode: BLOCK
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.110033 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.107587 |
+| Thread 2 time:	 | 0.106786 |
+| Thread 3 time:	 | 0.108368 |
+| Thread 4 time:	 | 0.106699 |
+Number of threads: 4		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.139164 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.110325 |
+| Thread 2 time:	 | 0.139037 |
+| Thread 3 time:	 | 0.107415 |
+| Thread 4 time:	 | 0.115479 |
+Number of threads: 8		Mode: BLOCK
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.115208 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.104409 |
+| Thread 2 time:	 | 0.100977 |
+| Thread 3 time:	 | 0.091359 |
+| Thread 4 time:	 | 0.053480 |
+| Thread 5 time:	 | 0.088614 |
+| Thread 6 time:	 | 0.094361 |
+| Thread 7 time:	 | 0.103930 |
+| Thread 8 time:	 | 0.094982 |
+Number of threads: 8		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 10
+|-----------------------------------|
+| Whole operation time:	 | 0.120422 |
+|-----------------------------------|
+| Thread 1 time:	 | 0.055866 |
+| Thread 2 time:	 | 0.053535 |
+| Thread 3 time:	 | 0.102670 |
+| Thread 4 time:	 | 0.105266 |
+| Thread 5 time:	 | 0.077577 |
+| Thread 6 time:	 | 0.069629 |
+| Thread 7 time:	 | 0.095595 |
+| Thread 8 time:	 | 0.080559 |
+Number of threads: 1		Mode: BLOCK
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 15.202822 |
+|-----------------------------------|
+| Thread 1 time:	 | 15.202606 |
+Number of threads: 1		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 15.353909 |
+|-----------------------------------|
+| Thread 1 time:	 | 15.353684 |
+Number of threads: 2		Mode: BLOCK
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 8.055349 |
+|-----------------------------------|
+| Thread 1 time:	 | 8.051860 |
+| Thread 2 time:	 | 8.055204 |
+Number of threads: 2		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 8.062347 |
+|-----------------------------------|
+| Thread 1 time:	 | 8.059902 |
+| Thread 2 time:	 | 8.062195 |
+Number of threads: 4		Mode: BLOCK
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 4.356767 |
+|-----------------------------------|
+| Thread 1 time:	 | 4.356639 |
+| Thread 2 time:	 | 4.341793 |
+| Thread 3 time:	 | 4.284776 |
+| Thread 4 time:	 | 4.234674 |
+Number of threads: 4		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 4.368433 |
+|-----------------------------------|
+| Thread 1 time:	 | 4.231948 |
+| Thread 2 time:	 | 4.321300 |
+| Thread 3 time:	 | 4.368249 |
+| Thread 4 time:	 | 4.352127 |
+Number of threads: 8		Mode: BLOCK
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 4.387739 |
+|-----------------------------------|
+| Thread 1 time:	 | 4.171381 |
+| Thread 2 time:	 | 4.202948 |
+| Thread 3 time:	 | 3.776902 |
+| Thread 4 time:	 | 4.116089 |
+| Thread 5 time:	 | 4.157130 |
+| Thread 6 time:	 | 4.363967 |
+| Thread 7 time:	 | 4.310199 |
+| Thread 8 time:	 | 4.324313 |
+Number of threads: 8		Mode: INTERLEAVED
+Image size: 640x480		Filter size: 65
+|-----------------------------------|
+| Whole operation time:	 | 4.361136 |
+|-----------------------------------|
+| Thread 1 time:	 | 4.254701 |
+| Thread 2 time:	 | 4.270335 |
+| Thread 3 time:	 | 4.344787 |
+| Thread 4 time:	 | 4.232178 |
+| Thread 5 time:	 | 4.217452 |
+| Thread 6 time:	 | 4.270491 |
+| Thread 7 time:	 | 4.262962 |
+| Thread 8 time:	 | 4.329240 |

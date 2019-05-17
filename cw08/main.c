@@ -52,6 +52,11 @@ int main(int argc, char **argv) {
   double startTime;
   double endTime;
 
+  printf("Number of threads: %i\t\tMode: %s\nImage size: %ix%i\t\tFilter size: "
+         "%i\n",
+         numberOfThreads, mode == BLOCK ? "BLOCK" : "INTERLEAVED",
+         inputImage.width, inputImage.height, filter.size);
+
   startTime = getCurrentTime();
   createThreads();
 
@@ -60,9 +65,11 @@ int main(int argc, char **argv) {
   }
   endTime = getCurrentTime();
 
-  printf("Whole operation time:\t%lf\n", endTime - startTime);
+  printf("|-----------------------------------|\n| Whole operation time:\t | "
+         "%lf |\n|-----------------------------------|\n",
+         endTime - startTime);
   for (i = 0; i < numberOfThreads; i++) {
-    printf("Thread %i time:\t\t%lf\n", i + 1, *threadsTimes[i]);
+    printf("| Thread %i time:\t | %lf |\n", i + 1, *threadsTimes[i]);
   }
 
   saveImage(outputFileName, &outputImage);
