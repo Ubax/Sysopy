@@ -17,7 +17,8 @@ void getDataFromArgs(int argc, char **argv);
 int truckMaxLoad, maxNumberOfLoads, maxSummedWeightOfLoad;
 int occupiedSpace;
 int sharedMemoryId = -2;
-int semaphoreId = -2;
+int semaphoreMaxElem = -1, semaphoreSet = -1, semaphoreWrite = -1,
+    semaphoreOnBelt = -1;
 struct ConveyorBeltQueue *conveyorBelt;
 
 int main(int argc, char **argv) {
@@ -25,26 +26,25 @@ int main(int argc, char **argv) {
   getDataFromArgs(argc, argv);
   init();
   while (1) {
-    if (!isEmpty(conveyorBelt)) {
-      struct Load ret = pop(semaphoreId, conveyorBelt);
-      if (ret.weight > truckMaxLoad - occupiedSpace) {
-        takeSem(semaphoreId, CONVEYOR_BELT_SEM_SET);
-        INFO("Truck is full\n");
-        emptyTruck();
-        releaseSem(semaphoreId, CONVEYOR_BELT_SEM_SET);
-      }
-      occupiedSpace += ret.weight;
-      INFO("Taken from belt. LoaderId: %i\n"
-           "\tOccupied space in truck: %i\n"
-           "\tPackage weight: %i\t"
-           "\tDiff time: %f\n",
-           ret.loaderId, occupiedSpace, ret.weight,
-           (getCurrentTime() - ret.timeOfAttempt));
-      releaseSem(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM);
-    } else {
+    if (isEmpty(conveyorBelt))
       INFO("Waiting for package\n");
+    takeSem(semaphoreOnBelt);
+    takeSem(semaphoreSet);
+    struct Load ret = pop(conveyorBelt);
+    if (ret.weight > truckMaxLoad - occupiedSpace) {
+      INFO("Truck is full\n");
+
+      emptyTruck();
     }
-    sleep(1);
+    occupiedSpace += ret.weight;
+    INFO("Taken from belt. LoaderId: %i\n"
+         "\tOccupied space in truck: %i\n"
+         "\tPackage weight: %i\t"
+         "\tDiff time: %f\tPlacement time: %f\n",
+         ret.loaderId, occupiedSpace, ret.weight,
+         (getCurrentTime() - ret.timeOfAttempt), ret.timeOfPlacement);
+    releaseSem(semaphoreMaxElem);
+    releaseSem(semaphoreSet);
   }
   return 0;
 }
@@ -71,9 +71,21 @@ void init() {
 }
 
 void createConveyorBelt() {
-  key_t key = CONVEYOR_BELT_FTOK;
+  key_t key = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_FTOK_PROJECT_NUM);
   if (key == -1)
     ERROR_EXIT("Getting key");
+  key_t keyMaxElem = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_MAX_ELEM);
+  if (keyMaxElem == -1)
+    ERROR_EXIT("Getting keyMaxElem");
+  key_t keySet = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_SET);
+  if (keySet == -1)
+    ERROR_EXIT("Getting keySet");
+  key_t keyWrite = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_WRITE);
+  if (keyWrite == -1)
+    ERROR_EXIT("Getting keyWrite");
+  key_t keyOnBelt = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_ON_BELT);
+  if (keyOnBelt == -1)
+    ERROR_EXIT("Getting keyOnBelt");
   sharedMemoryId = shmget(key, sizeof(struct ConveyorBeltQueue) + 10,
                           IPC_CREAT | IPC_EXCL | 0666);
   if (sharedMemoryId == -1)
@@ -85,13 +97,23 @@ void createConveyorBelt() {
   conveyorBelt->weight = 0;
   conveyorBelt->maxWeight = maxSummedWeightOfLoad;
 
-  semaphoreId = semget(key, 3, IPC_CREAT | IPC_EXCL | 0666);
-  if (semaphoreId == -1)
-    ERROR_EXIT("Creating semaphore");
+  semaphoreSet = semget(keySet, 1, IPC_CREAT | IPC_EXCL | 0666);
+  if (semaphoreSet == -1)
+    ERROR_EXIT("Creating semaphoreSet");
+  semaphoreMaxElem = semget(keyMaxElem, 1, IPC_CREAT | IPC_EXCL | 0666);
+  if (semaphoreMaxElem == -1)
+    ERROR_EXIT("Creating semaphoreMaxElem");
+  semaphoreWrite = semget(keyWrite, 1, IPC_CREAT | IPC_EXCL | 0666);
+  if (semaphoreWrite == -1)
+    ERROR_EXIT("Creating semaphoreWrite");
+  semaphoreOnBelt = semget(keyOnBelt, 1, IPC_CREAT | IPC_EXCL | 0666);
+  if (semaphoreOnBelt == -1)
+    ERROR_EXIT("Creating semaphoreOnBelt");
 
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_MAX_ELEM, maxNumberOfLoads);
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_SET, 1);
-  setSemValue(semaphoreId, CONVEYOR_BELT_SEM_PRIORITY, 1);
+  setSemValue(semaphoreMaxElem, maxNumberOfLoads);
+  setSemValue(semaphoreSet, 1);
+  setSemValue(semaphoreWrite, 1);
+  setSemValue(semaphoreOnBelt, 0);
 }
 
 void cleanExit() {
@@ -101,8 +123,17 @@ void cleanExit() {
   if (sharedMemoryId >= 0) {
     shmctl(sharedMemoryId, IPC_RMID, NULL);
   }
-  if (semaphoreId >= 0) {
-    semctl(semaphoreId, 0, IPC_RMID);
+  if (semaphoreMaxElem >= 0) {
+    semctl(semaphoreMaxElem, 0, IPC_RMID);
+  }
+  if (semaphoreSet >= 0) {
+    semctl(semaphoreSet, 0, IPC_RMID);
+  }
+  if (semaphoreWrite >= 0) {
+    semctl(semaphoreWrite, 0, IPC_RMID);
+  }
+  if (semaphoreOnBelt >= 0) {
+    semctl(semaphoreOnBelt, 0, IPC_RMID);
   }
 }
 

@@ -88,19 +88,19 @@ void init() {
 }
 
 void createConveyorBelt() {
-  key_t key = CONVEYOR_BELT_FTOK(CONVEYOR_BELT_FTOK_PROJECT_NUM);
+  key_t key = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_FTOK_PROJECT_NUM);
   if (key == -1)
     ERROR_EXIT("Getting key");
-  key_t keyMaxElem = CONVEYOR_BELT_FTOK(CONVEYOR_BELT_FTOK_PROJECT_NUM);
+  key_t keyMaxElem = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_MAX_ELEM);
   if (keyMaxElem == -1)
     ERROR_EXIT("Getting keyMaxElem");
-  key_t keySet = CONVEYOR_BELT_FTOK(CONVEYOR_BELT_FTOK_PROJECT_NUM);
+  key_t keySet = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_SET);
   if (keySet == -1)
     ERROR_EXIT("Getting keySet");
-  key_t keyWrite = CONVEYOR_BELT_FTOK(CONVEYOR_BELT_FTOK_PROJECT_NUM);
+  key_t keyWrite = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_WRITE);
   if (keyWrite == -1)
     ERROR_EXIT("Getting keyWrite");
-  key_t keyOnBelt = CONVEYOR_BELT_FTOK(CONVEYOR_BELT_FTOK_PROJECT_NUM);
+  key_t keyOnBelt = ftok(CONVEYOR_BELT_FTOK_PATH, CONVEYOR_BELT_SEM_ON_BELT);
   if (keyOnBelt == -1)
     ERROR_EXIT("Getting keyOnBelt");
   sharedMemoryId = shmget(key, sizeof(struct ConveyorBeltQueue) + 10, 0);

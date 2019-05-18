@@ -16,8 +16,7 @@
 #define MAX_QUEUE_SIZE 100
 #define CONVEYOR_BELT_FTOK_PATH getenv("HOME")
 #define CONVEYOR_BELT_FTOK_PROJECT_NUM 1
-#define CONVEYOR_BELT_FTOK (x)                                                 \
-  ftok(CONVEYOR_BELT_FTOK_PATH, (x)));
+
 #define CONVEYOR_BELT_SEM_MAX_ELEM 2
 #define CONVEYOR_BELT_SEM_WRITE 3
 #define CONVEYOR_BELT_SEM_ON_BELT 4
