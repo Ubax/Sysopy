@@ -24,6 +24,7 @@ int numberOfCars = 0;
 int numberOfPassengers = 0;
 int carCapacity = 0;
 int numberOfRides = 0;
+int numberOfWorkingCars = 0;
 
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t end_platform_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
                  "number of rides");
   }
   numberOfPassengers = getArgAsInt(argv, 1);
-  numberOfCars = getArgAsInt(argv, 2);
+  numberOfWorkingCars = numberOfCars = getArgAsInt(argv, 2);
   carCapacity = getArgAsInt(argv, 3);
   numberOfRides = getArgAsInt(argv, 4);
 
@@ -78,18 +79,14 @@ int main(int argc, char **argv) {
   }
 
   pthread_mutex_lock(&queue_mutex);
-  while (loadQueue.size > 0) {
+  while (numberOfWorkingCars > 0) {
     pthread_cond_wait(&queue_empty_cond, &queue_mutex);
   }
   pthread_mutex_unlock(&queue_mutex);
 
-  printf("Joining cars threads...\n");
-
   for (i = 0; i < numberOfPassengers; i++) {
     pthread_join(passengers[i], NULL);
   }
-
-  printf("Joining passengers threads...\n");
 
   for (i = 0; i < numberOfCars; i++) {
     pthread_join(cars[i], NULL);
@@ -113,6 +110,7 @@ void start(struct Car *car) {
 }
 
 void *passenger(void *num) {
+  int numOfPassRides = 0;
   pthread_mutex_lock(&queue_mutex);
   if (*(int *)num == numberOfPassengers - 1)
     pthread_cond_broadcast(&all_passengers_created_cond);
@@ -120,11 +118,13 @@ void *passenger(void *num) {
   pthread_mutex_unlock(&queue_mutex);
 
   pthread_mutex_lock(&queue_mutex);
-  while (loadQueue.size > 0) {
+  while (numberOfWorkingCars > 0) {
     if (currentCar == NULL) {
       currentCar = pop(&loadQueue);
     }
-    if (currentCar->canGetIn && sem_trywait(currentCar->semaphore) != -1) {
+    if (currentCar != NULL && currentCar->canGetIn &&
+        sem_trywait(currentCar->semaphore) != -1) {
+      numOfPassRides++;
       struct Car *seat = currentCar;
       int sval;
       sem_getvalue(seat->semaphore, &sval);
@@ -148,7 +148,8 @@ void *passenger(void *num) {
     pthread_mutex_lock(&queue_mutex);
   }
   free(num);
-  INFO("It was so much fun. See you soon\n");
+  INFO("\x1b[32;1mIt was so much fun. I rode %i times. See you soon\x1b[0m\n",
+       numOfPassRides);
   pthread_mutex_unlock(&queue_mutex);
   return (void *)0;
 }
@@ -230,7 +231,11 @@ void *car(void *args) {
     pthread_mutex_unlock(&queue_mutex);
   }
 
-  INFO("Enough rides for today. Going to workshop\n");
+  pthread_mutex_lock(&queue_mutex);
+  numberOfWorkingCars--;
+  INFO("\x1b[32;1mEnough rides for today. Going to workshop\x1b[0m\n");
+  pthread_cond_broadcast(&queue_empty_cond);
+  pthread_mutex_unlock(&queue_mutex);
 
   pthread_mutex_lock(&queue_mutex);
   clearThisCar(thisCar);
