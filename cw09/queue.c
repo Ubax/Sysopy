@@ -23,9 +23,9 @@ void clearQueue(struct Queue *queue) {
 }
 void push(struct Queue *queue, struct Car *element) {
   if (queue->data[queue->tail] != NULL)
-    MESSAGE_EXIT("Queue not empty %i", queue->tail);
+    MESSAGE_EXIT("Queue not empty %i %i", queue->tail, queue->maxSize);
   queue->data[queue->tail] = element;
-  if (queue->tail >= queue->maxSize)
+  if (queue->tail + 1 >= queue->maxSize)
     queue->tail = 0;
   else
     queue->tail++;
@@ -39,7 +39,7 @@ struct Car *head(struct Queue *queue) {
 struct Car *pop(struct Queue *queue) {
   void *el = head(queue);
   queue->data[queue->head] = NULL;
-  if (queue->head >= queue->maxSize)
+  if (queue->head + 1 >= queue->maxSize)
     queue->head = 0;
   else
     queue->head++;

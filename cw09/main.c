@@ -105,8 +105,7 @@ void cleanExit() {
 void start(struct Car *car) {
   car->canGetIn = 0;
   pthread_cond_broadcast(car->changedNumberOfPassengers);
-  currentCar = NULL;
-  INFO("Pressed start\n");
+  INFO("Pressed start in car %ld\n", *car->thread_id);
 }
 
 void *passenger(void *num) {
@@ -175,7 +174,6 @@ void loadPassengers(struct Car *thisCar) {
   int sval;
   sem_getvalue(thisCar->semaphore, &sval);
   while (sval > 0) {
-    INFO("Waiting for passengers\n");
     pthread_cond_wait(thisCar->changedNumberOfPassengers, &queue_mutex);
     sem_getvalue(thisCar->semaphore, &sval);
   }
@@ -209,23 +207,26 @@ void *car(void *args) {
 
     loadPassengers(thisCar);
 
-    INFO("Closing doors\n");
-    INFO("Begin of ride\n");
-    if (i < numberOfRides - 1)
+    currentCar = NULL;
+    INFO("\x1b[34;1mClosing doors\x1b[0m\n");
+    INFO("\x1b[34;1mBegin of ride\x1b[0m\n");
+    if (i < numberOfRides - 1) {
       push(&loadQueue, thisCar);
+    }
+
     push(&endPlatformQueue, thisCar);
     pthread_mutex_unlock(&queue_mutex);
 
     int time = rand() % 10;
     usleep(time * 1000);
     pthread_mutex_lock(&queue_mutex);
-    INFO("End of ride\n");
     while (*head(&endPlatformQueue)->thread_id != pthread_self()) {
       pthread_cond_wait(&end_platform_change_cond, &queue_mutex);
     }
+    INFO("\x1b[34;1mEnd of ride\x1b[0m\n");
     pop(&endPlatformQueue);
     pthread_cond_broadcast(&end_platform_change_cond);
-    INFO("Opening doors\n");
+    INFO("\x1b[34;1mOpening doors\x1b[0m\n");
     pthread_cond_broadcast(thisCar->endOfRide);
     pthread_cond_wait(thisCar->empty, &queue_mutex);
     pthread_mutex_unlock(&queue_mutex);
