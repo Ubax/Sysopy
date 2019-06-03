@@ -30,10 +30,6 @@ int main(int argc, char **argv) {
 
   initSockets();
 
-  // clients[0].socketLength = sizeof(clients[0].address);
-  // clients[0].socketFD =
-  //     accept(socketIPFD, (struct sockaddr *)&clients[0].address,
-  //            &clients[0].socketLength);
   return 0;
 }
 

@@ -10,7 +10,9 @@ struct Car {
   int inRide;
   pthread_cond_t *changedNumberOfPassengers;
   pthread_cond_t *endOfRide;
+  pthread_cond_t *beginRide;
   pthread_cond_t *empty;
+  int shouldStart;
 };
 
 struct Passenger {
