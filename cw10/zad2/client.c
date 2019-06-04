@@ -14,7 +14,7 @@ struct SOCKET_MSG get_msg(void);
 
 void delete_msg(struct SOCKET_MSG msg);
 
-void send_msg(struct SOCKET_MSG *);
+void send_msg(struct SOCKET_MSG msg);
 
 void send_empty(enum SOCKET_MSG_TYPE);
 
@@ -58,10 +58,8 @@ void processMSG(struct SOCKET_MSG msg) {
             send_empty(PONG);
             break;
         }
-        case NAME_TAKEN:
-            MESSAGE_EXIT("Name is already taken");
-        case FULL:
-            MESSAGE_EXIT("Server is full");
+        case NAME_TAKEN: MESSAGE_EXIT("Name is already taken");
+        case FULL: MESSAGE_EXIT("Server is full");
         case WORK: {
             puts("Doing work...");
             char *buffer = malloc(100 + 2 * msg.size);
@@ -88,14 +86,15 @@ void init() {
     if (connection_type == NETWORK) {
         strtok(address, ":");
         char *port = strtok(NULL, ":");
-        if (port == NULL) MESSAGE_EXIT("Specify a port");
+        if (port == NULL) MESSAGE_EXIT("No port in address");
 
         uint32_t in_addr = inet_addr(address);
-        if (in_addr == INADDR_NONE) MESSAGE_EXIT("Invalid address");
+        if (in_addr == INADDR_NONE) MESSAGE_EXIT("Invalid ip address");
 
         uint16_t port_num = (uint16_t) atoi(port);
-        if (port_num < 1024)
-            MESSAGE_EXIT("Invalid port number");
+        if (port_num < 1024) MESSAGE_EXIT("Too low port number");
+
+        if ((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) ERROR_EXIT("Creating web socket");
 
         struct sockaddr_in web_addr;
         memset(&web_addr, 0, sizeof(struct sockaddr_in));
@@ -104,78 +103,101 @@ void init() {
         web_addr.sin_addr.s_addr = in_addr;
         web_addr.sin_port = htons(port_num);
 
-        if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-            ERROR_EXIT("Creating web socket");
-
-        if (connect(socket_fd, (const struct sockaddr *) &web_addr, sizeof(web_addr)) == -1)
-            ERROR_EXIT("Connecting web socket");
+        if (connect(socket_fd, (const struct sockaddr *) &web_addr, sizeof(web_addr)) == -1) ERROR_EXIT(
+                "Connecting web socket");
     } else if (connection_type == UNIX) {
         char *un_path = address;
 
-        if (strlen(un_path) < 1 || strlen(un_path) > UNIX_PATH_MAX)
-            MESSAGE_EXIT("Invalid unix socket path");
+        if (strlen(un_path) < 1 || strlen(un_path) > UNIX_PATH_MAX) MESSAGE_EXIT("Too long unix socket path");
 
         struct sockaddr_un un_addr;
         un_addr.sun_family = AF_UNIX;
         snprintf(un_addr.sun_path, UNIX_PATH_MAX, "%s", un_path);
 
-        if ((socket_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
-            ERROR_EXIT("Creating unix socket");
+        struct sockaddr_un client_addr;
+        memset(&client_addr, 0, sizeof(client_addr));
+        client_addr.sun_family = AF_UNIX;
+        snprintf(client_addr.sun_path, UNIX_PATH_MAX, "%s", name);
 
-        if (connect(socket_fd, (const struct sockaddr *) &un_addr, sizeof(un_addr)) == -1)
-            ERROR_EXIT("Connecting unix socket");
+        if ((socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) ERROR_EXIT("Creating unix socket");
+
+        if (bind(socket_fd, (const struct sockaddr *) &client_addr, sizeof(client_addr)) == -1) ERROR_EXIT(
+                "Binding unix socket");
+
+        if (connect(socket_fd, (const struct sockaddr *) &un_addr, sizeof(un_addr)) == -1) ERROR_EXIT(
+                "Connecting unix socket");
     }
 
     send_empty(REGISTER);
 }
 
-void send_msg(struct SOCKET_MSG *msg) {
-    write(socket_fd, &msg->type, sizeof(msg->type));
-    write(socket_fd, &msg->size, sizeof(msg->size));
-    write(socket_fd, &msg->name_size, sizeof(msg->name_size));
-    write(socket_fd, &msg->id, sizeof(msg->id));
-    if (msg->size > 0) write(socket_fd, msg->content, msg->size);
-    if (msg->name_size > 0) write(socket_fd, msg->name, msg->name_size);
+void send_msg(struct SOCKET_MSG msg) {
+    ssize_t head_size = sizeof(msg.type) + sizeof(msg.size) + sizeof(msg.name_size) + sizeof(msg.id);
+    ssize_t size = head_size + msg.size + 1 + msg.name_size + 1;
+    int8_t *buff = malloc(size);
+    if (buff == NULL) ERROR_EXIT("Allocating message buffer");
+
+    memcpy(buff, &msg.type, sizeof(msg.type));
+    memcpy(buff + sizeof(msg.type), &msg.size, sizeof(msg.size));
+    memcpy(buff + sizeof(msg.type) + sizeof(msg.size), &msg.name_size, sizeof(msg.name_size));
+    memcpy(buff + sizeof(msg.type) + sizeof(msg.size) + sizeof(msg.name_size), &msg.id, sizeof(msg.id));
+
+    if (msg.size > 0 && msg.content != NULL)
+        memcpy(buff + head_size, msg.content, msg.size + 1);
+    if (msg.name_size > 0 && msg.name != NULL)
+        memcpy(buff + head_size + msg.size + 1, msg.name, msg.name_size + 1);
+
+    if (write(socket_fd, buff, size) != size) ERROR_EXIT("Writing to socket");
+
+    free(buff);
 }
 
 void send_empty(enum SOCKET_MSG_TYPE type) {
     struct SOCKET_MSG msg = {type, 0, strlen(name) + 1, 0, NULL, name};
-    send_msg(&msg);
+    send_msg(msg);
 };
 
 void send_done(int id, char *content) {
     struct SOCKET_MSG msg = {WORK_DONE, strlen(content) + 1, strlen(name) + 1, id, content, name};
-    send_msg(&msg);
+    send_msg(msg);
 }
 
 struct SOCKET_MSG get_msg(void) {
     struct SOCKET_MSG msg;
-    if (read(socket_fd, &msg.type, sizeof(msg.type)) != sizeof(msg.type))
+    ssize_t head_size = sizeof(msg.type) + sizeof(msg.size) + sizeof(msg.name_size) + sizeof(msg.id);
+    int8_t buff[head_size];
+    if (recv(socket_fd, buff, head_size, MSG_PEEK) < head_size) MESSAGE_EXIT("Uknown message from server");
+
+    memcpy(&msg.type, buff, sizeof(msg.type));
+    memcpy(&msg.size, buff + sizeof(msg.type), sizeof(msg.size));
+    memcpy(&msg.name_size, buff + sizeof(msg.type) + sizeof(msg.size), sizeof(msg.name_size));
+    memcpy(&msg.id, buff + sizeof(msg.type) + sizeof(msg.size) + sizeof(msg.name_size), sizeof(msg.id));
+
+    ssize_t size = head_size + msg.size + 1 + msg.name_size + 1;
+    int8_t *buffer = malloc(size);
+
+    if (recv(socket_fd, buffer, size, 0) < size) {
         MESSAGE_EXIT("Unknown message from server");
-    if (read(socket_fd, &msg.size, sizeof(msg.size)) != sizeof(msg.size))
-        MESSAGE_EXIT("Unknown message from server");
-    if (read(socket_fd, &msg.name_size, sizeof(msg.name_size)) != sizeof(msg.name_size))
-        MESSAGE_EXIT("Unknown message from server");
-    if (read(socket_fd, &msg.id, sizeof(msg.id)) != sizeof(msg.id))
-        MESSAGE_EXIT("Unknown message from server");
+    }
+
     if (msg.size > 0) {
         msg.content = malloc(msg.size + 1);
         if (msg.content == NULL) ERROR_EXIT("Allocating message content");
-        if (read(socket_fd, msg.content, msg.size) != msg.size) {
-            MESSAGE_EXIT("Unknown message from server");
-        }
+        memcpy(msg.content, buffer + head_size, msg.size + 1);
     } else {
         msg.content = NULL;
     }
+
     if (msg.name_size > 0) {
         msg.name = malloc(msg.name_size + 1);
         if (msg.name == NULL) ERROR_EXIT("Allocating message name");
-        if (read(socket_fd, msg.name, msg.name_size) != msg.name_size) {
-            MESSAGE_EXIT("Unknown message from server");
-        }
+        memcpy(msg.name, buffer + head_size + msg.size + 1, msg.name_size + 1);
     } else {
         msg.name = NULL;
     }
+
+    free(buffer);
+
     return msg;
 }
 
@@ -192,6 +214,7 @@ void signal_handler(int signo) {
 
 void cleanExit(void) {
     send_empty(UNREGISTER);
+    unlink(name);
     shutdown(socket_fd, SHUT_RDWR);
     close(socket_fd);
 }

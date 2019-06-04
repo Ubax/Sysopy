@@ -12,8 +12,8 @@ uint64_t id;
 pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct CLIENT clients[MAX_CLIENTS_NUMBER];
 
-pthread_t pinger;
-pthread_t commander;
+pthread_t ping_thread;
+pthread_t commands_thread;
 
 void init();
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
   struct epoll_event event;
   while (1) {
-    if (epoll_wait(epoll, &event, 1, -1) == -1) ERROR_EXIT("");
+    if (epoll_wait(epoll, &event, 1, -1) == -1) ERROR_EXIT("Waiting for event");
 
     if (event.data.fd < 0)
       handle_reg(-event.data.fd);
@@ -74,93 +74,93 @@ void init()
   web_addr.sin_port = htons(port_number);
 
   if ((web_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    ERROR_EXIT("");
+    ERROR_EXIT("Creating web socket");
 
   if (bind(web_socket, (const struct sockaddr *) &web_addr, sizeof(web_addr)))
-    ERROR_EXIT("");
+    ERROR_EXIT("Binding web socket");
 
   if (listen(web_socket, 64) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Listen web socket");
 
-  // init unix socket
   struct sockaddr_un un_addr;
   un_addr.sun_family = AF_UNIX;
 
   snprintf(un_addr.sun_path, UNIX_PATH_MAX, "%s", unix_socket_path);
 
   if ((unix_socket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-    ERROR_EXIT("");
+    ERROR_EXIT("Creating unix socket");
 
   if (bind(unix_socket, (const struct sockaddr *) &un_addr, sizeof(un_addr)))
-    ERROR_EXIT("");
+    ERROR_EXIT("Binding unix socket");
 
   if (listen(unix_socket, MAX_CLIENTS_NUMBER) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Listen unix socket");
 
-  // init epoll
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLPRI;
 
   if ((epoll = epoll_create1(0)) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Creating epoll");
 
   event.data.fd = -web_socket;
   if (epoll_ctl(epoll, EPOLL_CTL_ADD, web_socket, &event) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Adding web socket to epoll");
 
   event.data.fd = -unix_socket;
   if (epoll_ctl(epoll, EPOLL_CTL_ADD, unix_socket, &event) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Adding unix socket to epoll");
 
-  // start threads
-  if (pthread_create(&commander, NULL, commands_fun, NULL) != 0)
-    ERROR_EXIT("");
-  if (pthread_detach(commander) != 0)
-    ERROR_EXIT("");
+  if (pthread_create(&commands_thread, NULL, commands_fun, NULL) != 0)
+    ERROR_EXIT("Creating commands thread");
+  if (pthread_detach(commands_thread) != 0)
+    ERROR_EXIT("Detaching commands thread");
 
-  if (pthread_create(&pinger, NULL, ping_fun, NULL) != 0)
-    ERROR_EXIT("");
-  if (pthread_detach(pinger) != 0)
-    ERROR_EXIT("");
+  if (pthread_create(&ping_thread, NULL, ping_fun, NULL) != 0)
+    ERROR_EXIT("Creating ping thread");
+  if (pthread_detach(ping_thread) != 0)
+    ERROR_EXIT("Detaching ping thread");
+}
+
+int readFile(char *name, char *buffer){
+  FILE *file = fopen(name, "r");
+  if (file == NULL) {
+    perror("Opeing file");
+    return 1;
+  }
+  fseek(file, 0, SEEK_END);
+  size_t size = ftell(file);
+  fseek(file, 0L, SEEK_SET);
+
+  buffer = malloc(size + 1);
+  if (buffer == NULL) {
+    perror("Allocating buffer");
+    return 1;
+  }
+
+  buffer[size] = '\0';
+
+  if (fread(buffer, 1, size, file) != size) {
+    fprintf(stderr, "Could not read file\n");
+    free(buffer);
+    return 1;
+  }
+
+  fclose(file);
+  return 0;
 }
 
 void *commands_fun(void *params)
 {
-  char buffer[1024];
+  char file_name[1024];
   while (1) {
     int min_i = MAX_CLIENTS_NUMBER;
     int min = 1000000;
 
-    // read command
-    scanf("%1023s", buffer);
+    scanf("%1023s", file_name);
 
-    // open file
-    FILE *file = fopen(buffer, "r");
-    if (file == NULL) {
-      perror("");
-      continue;
-    }
-    fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
-    fseek(file, 0L, SEEK_SET);
+    char *file_buffer = NULL;
+    if(readFile(file_name, file_buffer))continue;
 
-    char *file_buff = malloc(size + 1);
-    if (file_buff == NULL) {
-      perror("");
-      continue;
-    }
-
-    file_buff[size] = '\0';
-
-    if (fread(file_buff, 1, size, file) != size) {
-      fprintf(stderr, "Could not read file\n");
-      free(file_buff);
-      continue;
-    }
-
-    fclose(file);
-
-    // send request
     pthread_mutex_lock(&client_mutex);
     for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
       if (!clients[i].socketFD) continue;
@@ -171,8 +171,8 @@ void *commands_fun(void *params)
     }
 
     if (min_i < MAX_CLIENTS_NUMBER) {
-      struct SOCKET_MSG msg = { WORK, strlen(file_buff) + 1, 0, ++id, file_buff, NULL };
-      printf("JOB %lu SEND TO %s\n", id, clients[min_i].name);
+      struct SOCKET_MSG msg = { WORK, strlen(file_buffer) + 1, 0, ++id, file_buffer, NULL };
+      printf("Job id: %lu \tsend to client:  %s\n", id, clients[min_i].name);
       send_msg(clients[min_i].socketFD, msg);
       clients[min_i].working++;
     } else {
@@ -180,7 +180,7 @@ void *commands_fun(void *params)
     }
     pthread_mutex_unlock(&client_mutex);
 
-    free(file_buff);
+    free(file_buffer);
   }
 }
 
@@ -206,13 +206,13 @@ void handle_reg(int sock)
 {
   puts("Client registered");
   int client = accept(sock, NULL, NULL);
-  if (client == -1) ERROR_EXIT("");
+  if (client == -1) ERROR_EXIT("Accepting socket");
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLPRI;
   event.data.fd = client;
 
   if (epoll_ctl(epoll, EPOLL_CTL_ADD, client, &event) == -1)
-    ERROR_EXIT("");
+    ERROR_EXIT("Adding client to epoll");
 }
 
 void handle_call(int sock)
@@ -241,7 +241,7 @@ void handle_call(int sock)
 
       clients[i].socketFD = sock;
       clients[i].name = malloc(msg.size + 1);
-      if (clients[i].name == NULL) ERROR_EXIT("");
+      if (clients[i].name == NULL) ERROR_EXIT("Allocating client name");
       strcpy(clients[i].name, msg.name);
       clients[i].working = 0;
       clients[i].inactive = 0;
@@ -331,7 +331,7 @@ struct SOCKET_MSG get_msg(int sock)
     MESSAGE_EXIT("Unknown message");
   if (msg.size > 0) {
     msg.content = malloc(msg.size + 1);
-    if (msg.content == NULL) ERROR_EXIT("");
+    if (msg.content == NULL) ERROR_EXIT("Allocating client content");
     if (read(sock, msg.content, msg.size) != msg.size) {
       MESSAGE_EXIT("Unknown message");
     }
@@ -340,7 +340,7 @@ struct SOCKET_MSG get_msg(int sock)
   }
   if (msg.name_size > 0) {
     msg.name = malloc(msg.name_size + 1);
-    if (msg.name == NULL) ERROR_EXIT("");
+    if (msg.name == NULL) ERROR_EXIT("Allocating client name");
     if (read(sock, msg.name, msg.name_size) != msg.name_size) {
       MESSAGE_EXIT("Unknown message");
     }
