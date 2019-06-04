@@ -40,7 +40,7 @@ w zależności od wartości drugiego argumentu ('<', '>','=') , pliki zwykłe z 
 równą dacie podanej jako trzeci argument programu. Program ma wypisać na standardowe wyjście następujące informacje znalezionych plików:
 
 * ścieżka bezwzględna pliku,
-* rodzaj pliku (zwykły plik - file, katalog - dir, urządzenie znakowe - char dev, urządzenie blokowe - block dev, potok nazwany - fifo, link symboliczny - slink, soket - sock) 
+* rodzaj pliku (zwykły plik - file, katalog - dir, urządzenie znakowe - char dev, urządzenie blokowe - block dev, potok nazwany - fifo, link symboliczny - slink, soket - socket_fd) 
 * rozmiar w bajtach,
 * datę ostatniego dostępu,
 * datę ostatniej modyfikacji.
