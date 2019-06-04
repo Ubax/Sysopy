@@ -16,3 +16,4 @@ cw02/zad2/test*
 *.tar.gz
 *.pdf
 *.zip
+*.o
