@@ -13,6 +13,7 @@ void *hello(void *arg) {
     /****************************************************
             przerwij dzialanie watku jesli bylo takie zadanie
     *****************************************************/
+    //pthread_testcancel();
     printf("Hello again world from thread number %d\n", *(int *)arg);
     sleep(2);
   }

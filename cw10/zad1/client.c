@@ -40,6 +40,9 @@ int main(int argc, char *argv[]) {
 
     init();
 
+    if(connection_type == UNIX)printf("Running in unix mode\n");
+    else printf("Running in network mode\n");
+
     while (1) {
         struct SOCKET_MSG msg = get_msg();
 
@@ -63,10 +66,10 @@ void processMSG(struct SOCKET_MSG msg) {
         case FULL:
             MESSAGE_EXIT("Server is full");
         case WORK: {
-            puts("Doing work...");
+            printf("Some work came\n");
             char *buffer = malloc(100 + 2 * msg.size);
             if (buffer == NULL) ERROR_EXIT("Allocating buffer");
-            sprintf(buffer, "echo '%s' | awk '{for(x=1;$x;++x)print $x}' | sort | uniq -c", (char *) msg.content);
+            sprintf(buffer, "echo '%s' | awk '{l=split($0,res,\" \");for(i=0;i <= l; i++)printf(\"%%s\\n\",res[i])}' | sort | uniq -c | sort -n", (char *) msg.content);
             FILE *result = popen(buffer, "r");
             if (result == 0) {
                 free(buffer);
@@ -74,7 +77,7 @@ void processMSG(struct SOCKET_MSG msg) {
             }
             int n = fread(buffer, 1, 99 + 2 * msg.size, result);
             buffer[n] = '\0';
-            puts("Work done...");
+            printf("Done it\n");
             send_done(msg.id, buffer);
             free(buffer);
             break;

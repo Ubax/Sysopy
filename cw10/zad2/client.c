@@ -64,7 +64,7 @@ void processMSG(struct SOCKET_MSG msg) {
             puts("Doing work...");
             char *buffer = malloc(100 + 2 * msg.size);
             if (buffer == NULL) ERROR_EXIT("Allocating buffer");
-            sprintf(buffer, "echo '%s' | awk '{for(x=1;$x;++x)print $x}' | sort | uniq -c", (char *) msg.content);
+            sprintf(buffer, "echo '%s' | awk '{l=split($0,res,\" \");for(i=0;i <= l; i++)printf(\"%s\\n\",res[i])}' | sort | uniq -c | sort -n", (char *) msg.content);
             FILE *result = popen(buffer, "r");
             if (result == 0) {
                 free(buffer);
