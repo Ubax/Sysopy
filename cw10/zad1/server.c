@@ -46,7 +46,7 @@ void cleanExit();
 
 int main(int argc, char *argv[]) {
     if (atexit(cleanExit) == -1) MESSAGE_EXIT("Registering atexit failed");
-    if(signal(SIGINT, signal_handler) == SIG_ERR)MESSAGE_EXIT("Registering signal failed");
+    if (signal(SIGINT, signal_handler) == SIG_ERR) MESSAGE_EXIT("Registering signal failed");
     if (argc < 2) {
         MESSAGE_EXIT("Program expects 2 arguments: "
                      "TCP/UDP port number\t"
@@ -161,6 +161,8 @@ void *commands_fun(void *params) {
                 min = clients[i].working;
             }
         }
+
+        printf("%i\n", clients[min_i].socketFD);
 
         if (min_i < MAX_CLIENTS_NUMBER) {
 

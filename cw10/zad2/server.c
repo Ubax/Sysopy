@@ -42,6 +42,7 @@ void cleanExit();
 
 int main(int argc, char *argv[]) {
     if (atexit(cleanExit) == -1) MESSAGE_EXIT("Registering atexit failed");
+    if(signal(SIGINT, signal_handler) == SIG_ERR)MESSAGE_EXIT("Registering signal failed");
     if (argc < 2) {
         MESSAGE_EXIT("Program expects 2 arguments: "
                      "TCP/UDP port number\t"
@@ -100,7 +101,8 @@ void init() {
     if (pthread_detach(pinger) != 0) ERROR_EXIT("Detaching ping thread");
 }
 
-int readFile(char *name, char *buffer){
+int readFile(char *name, char **_buffer) {
+    char *buffer;
     FILE *file = fopen(name, "r");
     if (file == NULL) {
         perror("Opening file");
@@ -125,6 +127,7 @@ int readFile(char *name, char *buffer){
     }
 
     fclose(file);
+    *_buffer = buffer;
     return 0;
 }
 
@@ -134,12 +137,15 @@ void *commands_fun(void *args) {
         int min_i = MAX_CLIENTS_NUMBER;
         int min = 1000000;
 
+        int min_not_active = 1000000;
+        int min_i_not_active = MAX_CLIENTS_NUMBER;
+
         // read command
         scanf("%1023s", file_name);
 
         // open file
         char *file_buffer = NULL;
-        if(readFile(file_name, file_buffer))continue;
+        if(readFile(file_name, &file_buffer))continue;
 
         // send request
         pthread_mutex_lock(&client_mutex);
@@ -149,13 +155,23 @@ void *commands_fun(void *args) {
                 min_i = i;
                 min = clients[i].working;
             }
+            if(min_not_active > clients[i].working && !clients[i].currently_working){
+                min_not_active = clients[i].working;
+                min_i_not_active = i;
+            }
         }
+        if(min_i != min_i_not_active && min_i_not_active < MAX_CLIENTS_NUMBER){
+            min_i = min_i_not_active;
+        }
+        printf("%i\n", clients[min_i].socketFD);
+        send_empty(clients[min_i].socketFD, OK);
 
         if (min_i < MAX_CLIENTS_NUMBER) {
             struct SOCKET_MSG msg = {WORK, strlen(file_buffer) + 1, 0, ++id, file_buffer, NULL};
             printf("Job id: %lu \tsend to client:  %s\n", id, clients[min_i].name);
             send_msg(clients[min_i].socketFD, msg);
             clients[min_i].working++;
+            clients[min_i].currently_working++;
         } else {
             fprintf(stderr, "No clients connected\n");
         }
@@ -183,18 +199,24 @@ void *ping_fun(void *args) {
 }
 
 void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_len, int socket) {
+    printf("Process msg\n");
     switch (msg.type) {
         case REGISTER: {
             enum SOCKET_MSG_TYPE reply = OK;
             int i;
             i = client_by_name(msg.name);
-            if (i < MAX_CLIENTS_NUMBER)
+            if (i < MAX_CLIENTS_NUMBER){
+                printf("Supplied name already taken!!!\n");
                 reply = NAME_TAKEN;
+            }
+
 
             for (i = 0; i < MAX_CLIENTS_NUMBER && clients[i].socketFD != 0; i++);
 
-            if (i == MAX_CLIENTS_NUMBER)
+            if (i == MAX_CLIENTS_NUMBER){
+                printf("Clients poll full!!!\n");
                 reply = FULL;
+            }
 
             if (reply != OK) {
                 send_empty(socket, reply);
@@ -207,7 +229,8 @@ void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_le
             strcpy(clients[i].name, msg.name);
             clients[i].addr = addr;
             clients[i].addr_len = addr_len;
-            clients[i].working = 0;
+            if(i>0)clients[i].working = clients[i-1].working;
+            else clients[i].working=0;
             clients[i].inactive = 0;
 
             send_empty(i, OK);
@@ -225,7 +248,7 @@ void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_le
             int i = client_by_name(msg.name);
             if (i < MAX_CLIENTS_NUMBER) {
                 clients[i].inactive = 0;
-                clients[i].working--;
+                clients[i].currently_working--;
             }
             printf("JOB %lu DONE BY %s:\n%s\n", msg.id, (char *) msg.name, (char *) msg.content);
             break;

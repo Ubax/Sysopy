@@ -5,8 +5,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 add_library(sysopy sysopy.c)
 
-add_executable(server.c)
-add_executable(client.c)
+add_executable(server server.c)
+add_executable(client client.c)
 
 target_link_libraries(server sysopy)
 target_link_libraries(server -lpthread)

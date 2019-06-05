@@ -23,6 +23,7 @@ struct CLIENT {
     char *name;
     int socketFD;
     uint8_t working;
+    uint8_t currently_working;
     uint8_t inactive;
     struct sockaddr *addr;
     socklen_t addr_len;
