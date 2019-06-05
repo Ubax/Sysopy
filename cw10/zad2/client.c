@@ -79,6 +79,8 @@ void processMSG(struct SOCKET_MSG msg) {
             free(buffer);
             break;
         }
+        case STOP:
+            exit(0);
         default:
             break;
     }

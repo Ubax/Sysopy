@@ -146,6 +146,7 @@ void *commands_fun(void *args) {
         // open file
         char *file_buffer = NULL;
         if(readFile(file_name, &file_buffer))continue;
+        printf("%s\n", file_buffer);
 
         // send request
         pthread_mutex_lock(&client_mutex);
@@ -155,21 +156,19 @@ void *commands_fun(void *args) {
                 min_i = i;
                 min = clients[i].working;
             }
-            if(min_not_active > clients[i].working && !clients[i].currently_working){
+            if(min_not_active > clients[i].working && clients[i].currently_working){
                 min_not_active = clients[i].working;
                 min_i_not_active = i;
             }
         }
-        if(min_i != min_i_not_active && min_i_not_active < MAX_CLIENTS_NUMBER){
-            min_i = min_i_not_active;
-        }
-        printf("%i\n", clients[min_i].socketFD);
-        send_empty(clients[min_i].socketFD, OK);
+//        if(min_i != min_i_not_active){
+//            min_i = min_i_not_active;
+//        }
 
         if (min_i < MAX_CLIENTS_NUMBER) {
             struct SOCKET_MSG msg = {WORK, strlen(file_buffer) + 1, 0, ++id, file_buffer, NULL};
             printf("Job id: %lu \tsend to client:  %s\n", id, clients[min_i].name);
-            send_msg(clients[min_i].socketFD, msg);
+            send_msg(min_i, msg);
             clients[min_i].working++;
             clients[min_i].currently_working++;
         } else {
@@ -202,21 +201,17 @@ void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_le
     printf("Process msg\n");
     switch (msg.type) {
         case REGISTER: {
+            printf("Register...\n");
             enum SOCKET_MSG_TYPE reply = OK;
             int i;
             i = client_by_name(msg.name);
-            if (i < MAX_CLIENTS_NUMBER){
-                printf("Supplied name already taken!!!\n");
+            if (i < MAX_CLIENTS_NUMBER)
                 reply = NAME_TAKEN;
-            }
-
 
             for (i = 0; i < MAX_CLIENTS_NUMBER && clients[i].socketFD != 0; i++);
 
-            if (i == MAX_CLIENTS_NUMBER){
-                printf("Clients poll full!!!\n");
+            if (i == MAX_CLIENTS_NUMBER)
                 reply = FULL;
-            }
 
             if (reply != OK) {
                 send_empty(socket, reply);
@@ -230,8 +225,9 @@ void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_le
             clients[i].addr = addr;
             clients[i].addr_len = addr_len;
             if(i>0)clients[i].working = clients[i-1].working;
-            else clients[i].working=0;
+            else clients[i].working = 0;
             clients[i].inactive = 0;
+            clients[i].currently_working=0;
 
             send_empty(i, OK);
             break;
@@ -241,6 +237,7 @@ void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_le
             for (i = 0;
                  i < MAX_CLIENTS_NUMBER && (clients[i].socketFD == 0 || strcmp(clients[i].name, msg.name) != 0); i++);
             if (i == MAX_CLIENTS_NUMBER) break;
+            printf("Unregistering client %s\n", clients[i].name);
             delete_client(i);
             break;
         }
@@ -373,6 +370,11 @@ void signal_handler(int signo) {
 }
 
 void cleanExit(void) {
+    for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
+        if (clients[i].socketFD){
+            send_empty(i, STOP);
+        }
+    }
     close(web_socket);
     close(unix_socket);
     unlink(unix_socket_path);
