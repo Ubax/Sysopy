@@ -131,12 +131,23 @@ int readFile(char *name, char **_buffer) {
     return 0;
 }
 
+int min_client_id(){
+    int min_i = MAX_CLIENTS_NUMBER;
+    int min = 1000000;
+    for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
+        if (!clients[i].socketFD) continue;
+        if (min > clients[i].working) {
+            min_i = i;
+            min = clients[i].working;
+        }
+    }
+    return min_i;
+}
+
 void *commands_fun(void *args) {
     char file_name[1024];
     while (1) {
-        int min_i = MAX_CLIENTS_NUMBER;
-        int min = 1000000;
-
+        int min_i;
         int min_not_active = 1000000;
         int min_i_not_active = MAX_CLIENTS_NUMBER;
 
@@ -150,17 +161,7 @@ void *commands_fun(void *args) {
 
         // send request
         pthread_mutex_lock(&client_mutex);
-        for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
-            if (!clients[i].socketFD) continue;
-            if (min > clients[i].working) {
-                min_i = i;
-                min = clients[i].working;
-            }
-            if(min_not_active > clients[i].working && clients[i].currently_working){
-                min_not_active = clients[i].working;
-                min_i_not_active = i;
-            }
-        }
+        min_i = min_client_id();
 //        if(min_i != min_i_not_active){
 //            min_i = min_i_not_active;
 //        }
@@ -197,39 +198,46 @@ void *ping_fun(void *args) {
     }
 }
 
+int register_client(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_len, int socket){
+    printf("Register...\n");
+    enum SOCKET_MSG_TYPE reply = OK;
+    int i;
+    i = client_by_name(msg.name);
+    if (i < MAX_CLIENTS_NUMBER)
+        reply = NAME_TAKEN;
+
+    for (i = 0; i < MAX_CLIENTS_NUMBER && clients[i].socketFD != 0; i++);
+
+    if (i == MAX_CLIENTS_NUMBER)
+        reply = FULL;
+
+    if (reply != OK) {
+        send_empty(socket, reply);
+        return 1;
+    }
+
+    int min_i  = min_client_id();;
+
+    clients[i].socketFD = socket;
+    clients[i].name = malloc(msg.name_size + 1);
+    if (clients[i].name == NULL) ERROR_EXIT("Allocating client name");
+    strcpy(clients[i].name, msg.name);
+    clients[i].addr = addr;
+    clients[i].addr_len = addr_len;
+    if(min_i<MAX_CLIENTS_NUMBER)clients[i].working = clients[min_i].working;
+    else clients[i].working=0;
+    clients[i].inactive = 0;
+    clients[i].currently_working=0;
+
+    send_empty(i, OK);
+    return 0;
+}
+
 void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_len, int socket) {
     printf("Process msg\n");
     switch (msg.type) {
         case REGISTER: {
-            printf("Register...\n");
-            enum SOCKET_MSG_TYPE reply = OK;
-            int i;
-            i = client_by_name(msg.name);
-            if (i < MAX_CLIENTS_NUMBER)
-                reply = NAME_TAKEN;
-
-            for (i = 0; i < MAX_CLIENTS_NUMBER && clients[i].socketFD != 0; i++);
-
-            if (i == MAX_CLIENTS_NUMBER)
-                reply = FULL;
-
-            if (reply != OK) {
-                send_empty(socket, reply);
-                break;
-            }
-
-            clients[i].socketFD = socket;
-            clients[i].name = malloc(msg.name_size + 1);
-            if (clients[i].name == NULL) ERROR_EXIT("Allocating client name");
-            strcpy(clients[i].name, msg.name);
-            clients[i].addr = addr;
-            clients[i].addr_len = addr_len;
-            if(i>0)clients[i].working = clients[i-1].working;
-            else clients[i].working = 0;
-            clients[i].inactive = 0;
-            clients[i].currently_working=0;
-
-            send_empty(i, OK);
+            register_client(msg, addr, addr_len, socket);
             break;
         }
         case UNREGISTER: {

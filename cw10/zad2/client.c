@@ -8,6 +8,8 @@ char *address;
 enum CONNECTION_TYPE connection_type = UNIX;
 int socket_fd;
 
+int kill_from_server = 0;
+
 void init();
 
 struct SOCKET_MSG get_msg(void);
@@ -56,7 +58,6 @@ void processMSG(struct SOCKET_MSG msg) {
             break;
         }
         case PING: {
-            printf("Ping\n");
             send_empty(PONG);
             break;
         }
@@ -80,6 +81,7 @@ void processMSG(struct SOCKET_MSG msg) {
             break;
         }
         case STOP:
+            kill_from_server = 1;
             exit(0);
         default:
             break;
@@ -217,7 +219,7 @@ void signal_handler(int signo) {
 }
 
 void cleanExit(void) {
-    send_empty(UNREGISTER);
+    if(!kill_from_server)send_empty(UNREGISTER);
     unlink(name);
     shutdown(socket_fd, SHUT_RDWR);
     close(socket_fd);
