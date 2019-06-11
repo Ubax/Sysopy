@@ -148,8 +148,6 @@ void *commands_fun(void *args) {
     char file_name[1024];
     while (1) {
         int min_i;
-        int min_not_active = 1000000;
-        int min_i_not_active = MAX_CLIENTS_NUMBER;
 
         // read command
         scanf("%1023s", file_name);
@@ -157,14 +155,10 @@ void *commands_fun(void *args) {
         // open file
         char *file_buffer = NULL;
         if(readFile(file_name, &file_buffer))continue;
-        printf("%s\n", file_buffer);
 
         // send request
         pthread_mutex_lock(&client_mutex);
         min_i = min_client_id();
-//        if(min_i != min_i_not_active){
-//            min_i = min_i_not_active;
-//        }
 
         if (min_i < MAX_CLIENTS_NUMBER) {
             struct SOCKET_MSG msg = {WORK, strlen(file_buffer) + 1, 0, ++id, file_buffer, NULL};
@@ -234,7 +228,6 @@ int register_client(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr
 }
 
 void process_msg(struct SOCKET_MSG msg, struct sockaddr *addr, socklen_t addr_len, int socket) {
-    printf("Process msg\n");
     switch (msg.type) {
         case REGISTER: {
             register_client(msg, addr, addr_len, socket);

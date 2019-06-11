@@ -130,8 +130,11 @@ void init() {
         if (bind(socket_fd, (const struct sockaddr *) &client_addr, sizeof(client_addr)) == -1) ERROR_EXIT(
                 "Binding unix socket");
 
-        if (connect(socket_fd, (const struct sockaddr *) &un_addr, sizeof(un_addr)) == -1) ERROR_EXIT(
-                "Connecting unix socket");
+        if (connect(socket_fd, (const struct sockaddr *) &un_addr, sizeof(un_addr)) == -1) {
+            unlink(name);
+            ERROR_EXIT("Connecting unix socket");
+        }
+
     }
 
     send_empty(REGISTER);
