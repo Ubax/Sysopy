@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
 void processMSG(struct SOCKET_MSG msg) {
     switch (msg.type) {
         case OK: {
+            printf("OK :)\n");
             break;
         }
         case PING: {

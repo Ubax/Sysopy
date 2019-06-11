@@ -110,6 +110,12 @@ void init() {
 
     if (pthread_create(&ping_thread, NULL, ping_fun, NULL) != 0) ERROR_EXIT("Creating ping thread");
     if (pthread_detach(ping_thread) != 0) ERROR_EXIT("Detaching ping thread");
+
+    int i;
+    for (i = 0; i < MAX_CLIENTS_NUMBER; i++){
+        clients[i].name=malloc(sizeof(char));
+        clients[i].name[0]='\0';
+    }
 }
 
 int readFile(char *name, char **_buffer) {
@@ -142,27 +148,29 @@ int readFile(char *name, char **_buffer) {
     return 0;
 }
 
+int min_client_id() {
+    int min_i = MAX_CLIENTS_NUMBER;
+    int min = 1000000;
+    for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
+        if (!clients[i].socketFD) continue;
+        if (min > clients[i].working) {
+            min_i = i;
+            min = clients[i].working;
+        }
+    }
+    return min_i;
+}
+
 void *commands_fun(void *params) {
     char file_name[1024];
     while (1) {
-        int min_i = MAX_CLIENTS_NUMBER;
-        int min = 1000000;
-
         scanf("%1023s", file_name);
 
         char *file_buffer = NULL;
         if (readFile(file_name, &file_buffer))continue;
 
         pthread_mutex_lock(&client_mutex);
-        for (int i = 0; i < MAX_CLIENTS_NUMBER; i++) {
-            if (!clients[i].socketFD) continue;
-            if (min > clients[i].working) {
-                min_i = i;
-                min = clients[i].working;
-            }
-        }
-
-        printf("%i\n", clients[min_i].socketFD);
+        int min_i = min_client_id();
 
         if (min_i < MAX_CLIENTS_NUMBER) {
 
@@ -230,11 +238,13 @@ void handle_call(int sock) {
                 break;
             }
 
+            int min_i = min_client_id();
+
             clients[i].socketFD = sock;
             clients[i].name = malloc(msg.size + 1);
             if (clients[i].name == NULL) ERROR_EXIT("Allocating client name");
             strcpy(clients[i].name, msg.name);
-            if (i > 0)clients[i].working = clients[i - 1].working;
+            if (min_i < MAX_CLIENTS_NUMBER)clients[i].working = clients[min_i].working;
             else clients[i].working = 0;
             clients[i].inactive = 0;
 
@@ -245,6 +255,7 @@ void handle_call(int sock) {
             int i;
             for (i = 0; i < MAX_CLIENTS_NUMBER && strcmp(clients[i].name, msg.name) != 0; i++);
             if (i == MAX_CLIENTS_NUMBER) break;
+            printf("Deleting %s of id %i\n", clients[i].name, i);
             delete_client(i);
             break;
         }
@@ -272,7 +283,7 @@ void handle_call(int sock) {
 void delete_client(int i) {
     delete_socket(clients[i].socketFD);
     clients[i].socketFD = 0;
-    clients[i].name = NULL;
+    clients[i].name = "";
     clients[i].working = 0;
     clients[i].inactive = 0;
 }
